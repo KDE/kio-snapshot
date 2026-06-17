@@ -1,4 +1,5 @@
 #include "ksnapshotservice.h"
+#include "ksnapshotservice_debug.h"
 
 #include <QCoreApplication>
 #include <QDBusConnection>
@@ -9,6 +10,8 @@
 #include <QString>
 
 #include <fcntl.h>
+#include <linux/fs.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -266,10 +269,15 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
         if (!fileSnapshotInfo.exists() || fileSnapshotInfo.ownerId() != userId) {
             continue;
         }
+        long generation;
+        int fd = open(fileSnapshotPath.toUtf8().constData(), O_RDONLY);
+        int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
+        qCDebug(KSNAPSHOTSERVICE_LOG()) << "iotctl ret" << ioctl_ret << "gen" << generation;
         fileSnapshot["Path"_L1] = fileSnapshotPath;
         fileSnapshot["SnapshotCreationTimeSec"_L1] = snapshot["CreationTimeSec"_L1];
         fileSnapshot["SnapshotCreationTimeNanosec"_L1] = snapshot["CreationTimeNanosec"_L1];
         fileSnapshot["ModificationTimeSec"_L1] = fileSnapshotInfo.lastModified().toSecsSinceEpoch();
+        fileSnapshot["Generation"_L1] = QVariant::fromValue<qulonglong>(qulonglong(generation));
         fileSnapshots << fileSnapshot;
     }
     return fileSnapshots;
