@@ -117,8 +117,8 @@ std::optional<QVariantList> getSnapshotsForSubvolume(uint64_t subvolume, uint us
                     QVariantMap snapshot;
                     snapshot["SubvolumeId"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.id));
                     snapshot["Path"_L1] = snapshotPath;
-                    snapshot["CreationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.ctime.tv_sec));
-                    snapshot["CreationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.ctime.tv_sec));
+                    snapshot["CreationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.otime.tv_sec));
+                    snapshot["CreationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.otime.tv_sec));
 
                     snapshots << snapshot;
                 }
