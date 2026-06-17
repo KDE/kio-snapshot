@@ -291,6 +291,26 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
         }
         fileSnapshots << fileSnapshot;
     }
+
+    // the last entry is the queried file itself
+    // this makes it convenient for the consumer to determine (by means of the Generation number) if the snapshots are actually modified wrt current file or not
+    QVariantMap currentInfo;
+    int fd = open(path.toUtf8().constData(), O_RDONLY);
+    struct stat sb;
+    if (fd != -1 && fstat(fd, &sb) != -1 && sb.st_uid == userId) {
+        currentInfo["Path"_L1] = path;
+        currentInfo["ModificationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_sec));
+        currentInfo["ModificationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_nsec));
+        long generation;
+        int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
+        if (ioctl_ret == -1) {
+            qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << path << "returned" << ioctl_ret << std::strerror(errno);
+        } else {
+            currentInfo["Generation"_L1] = QVariant::fromValue<qulonglong>(qulonglong(generation));
+        }
+        fileSnapshots << currentInfo;
+    }
+
     return fileSnapshots;
 }
 
