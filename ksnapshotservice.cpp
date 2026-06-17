@@ -229,7 +229,7 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
     QFileInfo fileInfo(path);
     QDir parentDir = fileInfo.absoluteDir();
 
-    if (fileInfo.ownerId() != userId) {
+    if (!fileInfo.exists() || fileInfo.ownerId() != userId) {
         sendErrorReply(QDBusError::AccessDenied);
         return QVariantList();
     }
