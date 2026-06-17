@@ -275,7 +275,7 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
             }
             continue;
         }
-        int generation;
+        unsigned int generation;
         int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
         if (ioctl_ret == -1) {
             qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << fileSnapshotPath << "returned" << ioctl_ret << std::strerror(errno);
@@ -301,7 +301,7 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
         currentInfo["Path"_L1] = path;
         currentInfo["ModificationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_sec));
         currentInfo["ModificationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_nsec));
-        int generation;
+        unsigned int generation;
         int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
         if (ioctl_ret == -1) {
             qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << path << "returned" << ioctl_ret << std::strerror(errno);
