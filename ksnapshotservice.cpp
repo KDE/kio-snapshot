@@ -109,26 +109,27 @@ std::optional<QVariantList> getSnapshotsForSubvolume(uint64_t subvolume, uint us
     struct btrfs_util_subvolume_info iter_info;
     char *iter_path;
     while (!(btrfs_err = btrfs_util_subvolume_iter_next_info(it, &iter_path, &iter_info))) {
+        free(iter_path);
         if (QByteArrayView::fromArray(iter_info.parent_uuid) == subvolumeUuid) {
             // (parent_uuid == subvolume_uuid) => this is a snapshot of the subvolume
-            std::optional<QString> snapshotPathOpt = ::getAbsoluteSubvolumePath(iter_info.id); // QString::fromUtf8(iter_path);
-            if (snapshotPathOpt.has_value()) {
-                QString snapshotPath = snapshotPathOpt.value();
-                int snapshotDirFd = openDirForUser(snapshotPath, userId);
-                if (snapshotDirFd != -1) {
-                    close(snapshotDirFd);
-                    // user owns snapshot dir, so we can reveal it
-                    QVariantMap snapshot;
-                    snapshot["SubvolumeId"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.id));
-                    snapshot["Path"_L1] = snapshotPath;
-                    snapshot["CreationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.otime.tv_sec));
-                    snapshot["CreationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.otime.tv_sec));
+            std::optional<QString> snapshotPathOpt = ::getAbsoluteSubvolumePath(iter_info.id);
+            if (!snapshotPathOpt.has_value()) {
+                continue;
+            }
+            QString snapshotPath = snapshotPathOpt.value();
+            int snapshotDirFd = openDirForUser(snapshotPath, userId);
+            if (snapshotDirFd != -1) {
+                close(snapshotDirFd);
+                // user owns snapshot dir, so we can reveal it
+                QVariantMap snapshot;
+                snapshot["SubvolumeId"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.id));
+                snapshot["Path"_L1] = snapshotPath;
+                snapshot["CreationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.otime.tv_sec));
+                snapshot["CreationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.otime.tv_sec));
 
-                    snapshots << snapshot;
-                }
+                snapshots << snapshot;
             }
         }
-        free(iter_path);
     }
     btrfs_util_subvolume_iter_destroy(it);
 
