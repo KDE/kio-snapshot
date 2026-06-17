@@ -275,7 +275,7 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
             }
             continue;
         }
-        long generation;
+        int generation;
         int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
         if (ioctl_ret == -1) {
             qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << fileSnapshotPath << "returned" << ioctl_ret << std::strerror(errno);
@@ -287,7 +287,7 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
         fileSnapshot["ModificationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_sec));
         fileSnapshot["ModificationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_nsec));
         if (ioctl_ret == 0) {
-            fileSnapshot["Generation"_L1] = QVariant::fromValue<qulonglong>(qulonglong(generation));
+            fileSnapshot["Generation"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(generation));
         }
         fileSnapshots << fileSnapshot;
     }
@@ -301,12 +301,12 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
         currentInfo["Path"_L1] = path;
         currentInfo["ModificationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_sec));
         currentInfo["ModificationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_nsec));
-        long generation;
+        int generation;
         int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
         if (ioctl_ret == -1) {
             qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << path << "returned" << ioctl_ret << std::strerror(errno);
         } else {
-            currentInfo["Generation"_L1] = QVariant::fromValue<qulonglong>(qulonglong(generation));
+            currentInfo["Generation"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(generation));
         }
         fileSnapshots << currentInfo;
     }
