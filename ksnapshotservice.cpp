@@ -267,21 +267,26 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
         QVariantMap snapshot = snapshotVar.toMap();
         QVariantMap fileSnapshot;
         QString fileSnapshotPath = QDir(snapshot["Path"_L1].toString()).absoluteFilePath(pathRel);
-        QFileInfo fileSnapshotInfo(fileSnapshotPath);
-        if (!fileSnapshotInfo.exists() || fileSnapshotInfo.ownerId() != userId) {
+        int fd = open(fileSnapshotPath.toUtf8().constData(), O_RDONLY);
+        struct stat sb;
+        if (fd == -1 || fstat(fd, &sb) == -1 || sb.st_uid != userId) {
+            if (fd != -1) {
+                close(fd);
+            }
             continue;
         }
         long generation;
-        int fd = open(fileSnapshotPath.toUtf8().constData(), O_RDONLY);
         int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
-        if (ioctl_ret) {
-            qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << fileSnapshotPath << "returned" << ioctl_ret << std::strerror(ioctl_ret);
+        if (ioctl_ret == -1) {
+            qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << fileSnapshotPath << "returned" << ioctl_ret << std::strerror(errno);
         }
+        close(fd);
         fileSnapshot["Path"_L1] = fileSnapshotPath;
         fileSnapshot["SnapshotCreationTimeSec"_L1] = snapshot["CreationTimeSec"_L1];
         fileSnapshot["SnapshotCreationTimeNanosec"_L1] = snapshot["CreationTimeNanosec"_L1];
-        fileSnapshot["ModificationTimeSec"_L1] = fileSnapshotInfo.lastModified().toSecsSinceEpoch();
-        if (ioctl_ret) {
+        fileSnapshot["ModificationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_sec));
+        fileSnapshot["ModificationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_nsec));
+        if (ioctl_ret == 0) {
             fileSnapshot["Generation"_L1] = QVariant::fromValue<qulonglong>(qulonglong(generation));
         }
         fileSnapshots << fileSnapshot;
