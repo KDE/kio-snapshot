@@ -321,17 +321,17 @@ int main(int argc, char *argv[])
     QDBusConnection bus = QDBusConnection::systemBus();
 
     if (!bus.registerService("org.kde.ksnapshotservice"_L1)) {
-        qCritical() << "Failed to register D-Bus service name:" << bus.lastError().message();
+        qCCritical(KSNAPSHOTSERVICE_LOG) << "Failed to register D-Bus service name:" << bus.lastError().message();
         return 1;
     }
 
     KSnapshotService service;
 
     if (!bus.registerObject("/KSnapshotService"_L1, &service, QDBusConnection::ExportScriptableContents)) {
-        qCritical() << "Failed to export object on path:" << bus.lastError().message();
+        qCCritical(KSNAPSHOTSERVICE_LOG) << "Failed to export object on path:" << bus.lastError().message();
         return 1;
     }
 
-    qDebug() << "KSnapshotService is running on D-Bus...";
+    qCInfo(KSNAPSHOTSERVICE_LOG) << "KSnapshotService is running on D-Bus...";
     return app.exec();
 }
