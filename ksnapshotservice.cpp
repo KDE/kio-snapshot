@@ -1,3 +1,9 @@
+/*
+    SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
+
 #include "ksnapshotservice.h"
 #include "ksnapshotservice_debug.h"
 
