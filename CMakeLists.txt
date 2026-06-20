@@ -28,6 +28,7 @@ find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
 
 find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
     KIO
+    I18n
 )
 
 find_package(PkgConfig REQUIRED)
@@ -45,43 +46,8 @@ kde_clang_format(${ALL_CLANG_FORMAT_SOURCE_FILES})
 
 kde_configure_git_pre_commit_hook(CHECKS CLANG_FORMAT)
 
-ecm_qt_declare_logging_category(GENERATED_SOURCES
-    HEADER "ksnapshotservice_debug.h"
-    IDENTIFIER "KSNAPSHOTSERVICE_LOG"
-    CATEGORY_NAME "org.kde.ksnapshotservice"
-    DEFAULT_SEVERITY Debug
-)
+qt_generate_dbus_interface(service/ksnapshotservice.h org.kde.KSnapshotService.xml OPTIONS -a)
 
-qt_generate_dbus_interface(ksnapshotservice.h org.kde.KSnapshotService.xml OPTIONS -a)
-
-add_executable(ksnapshotservice
-    ksnapshotservice.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/ksnapshotservice_debug.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/org.kde.KSnapshotService.xml
-)
-
-target_link_libraries(ksnapshotservice
-    Qt6::Core
-    Qt6::DBus
-    PkgConfig::libbtrfsutil
-)
-
-configure_file(org.kde.ksnapshotservice.service.in org.kde.ksnapshotservice.service)
-configure_file(ksnapshotservice.service.in ksnapshotservice.service)
-
-install(TARGETS
-  ksnapshotservice
-  DESTINATION ${KDE_INSTALL_LIBEXECDIR})
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/org.kde.ksnapshotservice.service
-  DESTINATION ${KDE_INSTALL_DBUSSYSTEMSERVICEDIR})
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/ksnapshotservice.service
-  DESTINATION ${KDE_INSTALL_SYSTEMDUNITDIR}/system)
-install(FILES
-  org.kde.ksnapshotservice.conf
-  DESTINATION ${KDE_INSTALL_DBUSDIR}/system.d/)
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/org.kde.KSnapshotService.xml
-  DESTINATION ${KDE_INSTALL_DBUSINTERFACEDIR})
-
+add_subdirectory(service)
+add_subdirectory(kioworker)
+add_subdirectory(contextmenu)

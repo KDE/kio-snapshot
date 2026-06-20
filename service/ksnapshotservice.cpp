@@ -18,6 +18,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <linux/fs.h>
+#include <qlogging.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -90,11 +91,13 @@ std::optional<QVariantList> getSnapshotsForSubvolume(uint64_t subvolume, uint us
 
     std::optional<QString> subvolumePathAbs = getAbsoluteSubvolumePath(subvolume);
     if (!subvolumePathAbs.has_value()) {
+        qCDebug(KSNAPSHOTSERVICE_LOG) << "couldn't get abs path for" << subvolume;
         return std::nullopt;
     }
 
     int subvolumeDirFd = openDirForUser(subvolumePathAbs.value(), userId);
     if (subvolumeDirFd == -1) {
+        qCDebug(KSNAPSHOTSERVICE_LOG) << "couldn't open" << subvolumePathAbs.value() << "for" << userId;
         return std::nullopt;
     }
     close(subvolumeDirFd);
@@ -102,6 +105,7 @@ std::optional<QVariantList> getSnapshotsForSubvolume(uint64_t subvolume, uint us
     struct btrfs_util_subvolume_info info;
     btrfs_err = btrfs_util_subvolume_get_info("/", subvolume, &info);
     if (btrfs_err) {
+        qCDebug(KSNAPSHOTSERVICE_LOG) << btrfs_util_strerror(btrfs_err);
         return std::nullopt;
     }
     QByteArrayView subvolumeUuid = QByteArrayView::fromArray(info.uuid);
@@ -109,6 +113,7 @@ std::optional<QVariantList> getSnapshotsForSubvolume(uint64_t subvolume, uint us
     struct btrfs_util_subvolume_iterator *it;
     btrfs_err = btrfs_util_subvolume_iter_create("/", subvolume, 0, &it);
     if (btrfs_err) {
+        qCDebug(KSNAPSHOTSERVICE_LOG) << btrfs_util_strerror(btrfs_err);
         return std::nullopt;
     }
 
@@ -209,6 +214,7 @@ QVariantList KSnapshotService::getSnapshotsForSubvolume(qulonglong subvolume)
 {
     QDBusReply<uint> userIdReply = getUserId();
     if (!userIdReply.isValid()) {
+        qCDebug(KSNAPSHOTSERVICE_LOG) << "couldn't get user ID, denying";
         sendErrorReply(QDBusError::AccessDenied);
         return QVariantList();
     }
@@ -216,6 +222,7 @@ QVariantList KSnapshotService::getSnapshotsForSubvolume(qulonglong subvolume)
 
     std::optional<QVariantList> snapshots = ::getSnapshotsForSubvolume(subvolume, userId);
     if (!snapshots.has_value()) {
+        qCDebug(KSNAPSHOTSERVICE_LOG) << "getSnapshotsForSubvolume failed internally, denying";
         sendErrorReply(QDBusError::AccessDenied);
         return QVariantList();
     }
