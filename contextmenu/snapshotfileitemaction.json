@@ -1,0 +1,11 @@
+{
+    "KPlugin": {
+        "Description": "Manage snapshots for files",
+        "Icon": "view-history",
+        "License": "GPL",
+        "MimeTypes": [
+            "application/octet-stream"
+        ],
+        "Name": "Snapshots"
+    }
+}
