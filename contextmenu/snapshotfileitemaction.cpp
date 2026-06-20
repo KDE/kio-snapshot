@@ -9,6 +9,9 @@
 
 #include "service_interface.h"
 
+#include <KIO/JobUiDelegate>
+#include <KIO/OpenUrlJob>
+
 #include <KFileItem>
 #include <KLocalizedString>
 #include <KPluginFactory>
@@ -18,6 +21,8 @@
 #include <QList>
 #include <QMenu>
 #include <QUrl>
+#include <kjob.h>
+#include <qloggingcategory.h>
 
 using namespace Qt::StringLiterals;
 
@@ -39,25 +44,52 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
 
     QUrl itemUrl = fileItemInfos.urlList().first();
     KFileItem item = fileItemInfos.items().findByUrl(itemUrl);
-    if (itemUrl.scheme() == "snapshot"_L1 || !item.isLocalFile()) {
-        // TODO support for directories
+    if (itemUrl.scheme() == "snapshot"_L1) {
         return actions;
     }
 
-    auto snapshotQueryReply = service->getSnapshotsForFile(itemUrl.toLocalFile());
-    snapshotQueryReply.waitForFinished();
-    if (!snapshotQueryReply.isValid()) {
-        return actions;
-    }
-    QVariantList snapshotsVars = snapshotQueryReply.value();
-    QList<QVariantMap> snapshots;
-    for (const QVariant &snapshotV : snapshotsVars) {
-        snapshots << qdbus_cast<QVariantMap>(snapshotV.value<QDBusArgument>());
-    }
+    if (item.isDir()) {
+        auto subvolumeIdReply = service->getSubvolumeForPath(itemUrl.toLocalFile());
+        subvolumeIdReply.waitForFinished();
+        if (!subvolumeIdReply.isValid()) {
+            return actions;
+        }
+        qulonglong subvolumeId = subvolumeIdReply.value();
+        auto subvolumePathReply = service->getPathForSubvolume(subvolumeId);
+        subvolumePathReply.waitForFinished();
+        if (!subvolumePathReply.isValid()) {
+            return actions;
+        }
+        qCDebug(SNAPSHOT_FILEITEMACTION()) << subvolumePathReply.value() << itemUrl << itemUrl.toLocalFile();
+        if (subvolumePathReply.value() == itemUrl.toLocalFile()) {
+            // we are at the root of a subvolume
+            auto snapshotReply = service->getSnapshotsForSubvolume(subvolumeId);
+            snapshotReply.waitForFinished();
+            if (snapshotReply.isValid() && !snapshotReply.value().isEmpty()) {
+                QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18n("Browse snapshots…"), parentWidget);
+                connect(action, &QAction::triggered, this, [this, subvolumeId]() {
+                    KIO::OpenUrlJob *job = new KIO::OpenUrlJob(QUrl("snapshot://subvolume%1"_L1.arg(QString::number(subvolumeId))), "inode/directory"_L1, this);
+                    job->start();
+                });
+                actions << action;
+            }
+        }
+    } else if (item.isLocalFile()) {
+        auto snapshotQueryReply = service->getSnapshotsForFile(itemUrl.toLocalFile());
+        snapshotQueryReply.waitForFinished();
+        if (!snapshotQueryReply.isValid()) {
+            return actions;
+        }
+        QVariantList snapshotsVars = snapshotQueryReply.value();
+        QList<QVariantMap> snapshots;
+        for (const QVariant &snapshotV : snapshotsVars) {
+            snapshots << qdbus_cast<QVariantMap>(snapshotV.value<QDBusArgument>());
+        }
 
-    QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18n("View snapshots…"), parentWidget);
-    // TODO actually implement the dialog box...
-    actions << action;
+        QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18n("View snapshots…"), parentWidget);
+        // TODO actually implement the dialog box...
+        actions << action;
+    }
 
     return actions;
 }
