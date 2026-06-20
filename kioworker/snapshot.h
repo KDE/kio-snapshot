@@ -28,7 +28,6 @@ protected:
 
 private:
     org::kde::ksnapshotservice *service;
-    QMap<qulonglong, const QString> subvolumePathMap;
     QHash<qulonglong, QVariantMap> snapshotInfoMap;
 };
 
