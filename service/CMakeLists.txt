@@ -8,7 +8,6 @@ ecm_qt_declare_logging_category(GENERATED_SOURCES
 add_executable(ksnapshotservice
     ksnapshotservice.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/ksnapshotservice_debug.cpp
-    ${CMAKE_BINARY_DIR}/org.kde.KSnapshotService.xml
 )
 
 target_link_libraries(ksnapshotservice

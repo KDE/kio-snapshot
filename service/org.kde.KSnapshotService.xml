@@ -1,0 +1,23 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name="org.kde.ksnapshotservice">
+    <method name="getSubvolumeForPath">
+      <arg type="t" direction="out"/>
+      <arg name="path" type="s" direction="in"/>
+    </method>
+    <method name="getPathForSubvolume">
+      <arg type="s" direction="out"/>
+      <arg name="subvolume" type="t" direction="in"/>
+    </method>
+    <method name="getSnapshotsForFile">
+      <arg type="(iiii)" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QList&lt;FileSnapshotInfo&gt;"/>
+      <arg name="path" type="s" direction="in"/>
+    </method>
+    <method name="getSnapshotsForSubvolume">
+      <arg type="(iiii)" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QList&lt;SubvolumeSnapshotInfo&gt;"/>
+      <arg name="subvolume" type="t" direction="in"/>
+    </method>
+  </interface>
+</node>

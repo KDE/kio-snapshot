@@ -20,6 +20,7 @@
 #include <KPluginFactory>
 
 #include <QAction>
+#include <QDBusMetaType>
 #include <QIcon>
 #include <QList>
 #include <QMenu>
@@ -31,8 +32,12 @@ K_PLUGIN_CLASS_WITH_JSON(SnapshotFileItemAction, "snapshotfileitemaction.json")
 
 SnapshotFileItemAction::SnapshotFileItemAction(QObject *parent)
     : KAbstractFileItemActionPlugin(parent)
-    , service(new org::kde::ksnapshotservice("org.kde.ksnapshotservice"_L1, "/KSnapshotService"_L1, QDBusConnection::systemBus(), this))
 {
+    qDBusRegisterMetaType<FileSnapshotInfo>();
+    qDBusRegisterMetaType<QList<FileSnapshotInfo>>();
+    qDBusRegisterMetaType<SubvolumeSnapshotInfo>();
+    qDBusRegisterMetaType<QList<SubvolumeSnapshotInfo>>();
+    service = new org::kde::ksnapshotservice("org.kde.ksnapshotservice"_L1, "/KSnapshotService"_L1, QDBusConnection::systemBus(), this);
 }
 
 QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &fileItemInfos, QWidget *parentWidget)
@@ -53,12 +58,14 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
         auto subvolumeIdReply = service->getSubvolumeForPath(itemUrl.toLocalFile());
         subvolumeIdReply.waitForFinished();
         if (!subvolumeIdReply.isValid()) {
+            qCDebug(SNAPSHOT_FILEITEMACTION()) << "invalid reply for getSubvolumeForPath" << itemUrl;
             return actions;
         }
         qulonglong subvolumeId = subvolumeIdReply.value();
         auto subvolumePathReply = service->getPathForSubvolume(subvolumeId);
         subvolumePathReply.waitForFinished();
         if (!subvolumePathReply.isValid()) {
+            qCDebug(SNAPSHOT_FILEITEMACTION()) << "invalid reply for getPathForSubvolume" << subvolumeId;
             return actions;
         }
         qCDebug(SNAPSHOT_FILEITEMACTION()) << subvolumePathReply.value() << itemUrl << itemUrl.toLocalFile();
@@ -79,26 +86,10 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
         auto snapshotQueryReply = service->getSnapshotsForFile(itemUrl.toLocalFile());
         snapshotQueryReply.waitForFinished();
         if (!snapshotQueryReply.isValid()) {
+            qCDebug(SNAPSHOT_FILEITEMACTION()) << "invalid reply for getSnapshotsForFile" << itemUrl;
             return actions;
         }
-        QVariantList snapshotsVars = snapshotQueryReply.value();
-        QList<FileSnapshotInfo> snapshotInfos;
-        for (const QVariant &snapshotV : snapshotsVars) {
-            QVariantMap snapshotMap = qdbus_cast<QVariantMap>(snapshotV.value<QDBusArgument>());
-            FileSnapshotInfo snapshotInfo;
-            snapshotInfo.path = snapshotMap.value("Path"_L1).toString();
-            snapshotInfo.generation = snapshotMap.value("Generation"_L1).toULongLong();
-            if (snapshotMap.contains("SnapshotCreationTimeSecs"_L1)) {
-                snapshotInfo.snapshotTimeSecs = snapshotMap.value("SnapshotCreationTimeSecs"_L1).toULongLong();
-                snapshotInfo.snapshotTimeNanosecs = snapshotMap.value("SnapshotCreationTimeNanosecs"_L1).toULongLong();
-            } else {
-                snapshotInfo.snapshotTimeSecs = std::nullopt;
-                snapshotInfo.snapshotTimeNanosecs = std::nullopt;
-            }
-            snapshotInfo.modificationTimeSecs = snapshotMap.value("ModificationTimeSecs"_L1).toULongLong();
-            snapshotInfo.modificationTimeNanosecs = snapshotMap.value("ModificationTimeNanosecs"_L1).toULongLong();
-            snapshotInfos << snapshotInfo;
-        }
+        QList<FileSnapshotInfo> snapshotInfos = snapshotQueryReply.value();
 
         QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18n("View snapshots…"), parentWidget);
         connect(action, &QAction::triggered, this, [parentWidget, itemUrl, snapshotInfos]() {

@@ -12,6 +12,8 @@
 #include <KIO/ForwardingWorkerBase>
 #include <KIO/WorkerBase>
 
+class SubvolumeSnapshotInfo;
+
 class SnapshotProtocol : public KIO::ForwardingWorkerBase
 {
     Q_OBJECT
@@ -28,7 +30,7 @@ protected:
 
 private:
     org::kde::ksnapshotservice *service;
-    QHash<qulonglong, QVariantMap> snapshotInfoMap;
+    QHash<qulonglong, SubvolumeSnapshotInfo> snapshotInfoMap;
 };
 
 #endif

@@ -2,7 +2,10 @@ kcoreaddons_add_plugin(kio_snapshot
     INSTALL_NAMESPACE kf6/kio
 )
 
-qt_add_dbus_interface(service_dbus_src ${CMAKE_BINARY_DIR}/org.kde.KSnapshotService.xml service_interface)
+set_source_files_properties(${CMAKE_SOURCE_DIR}/service/org.kde.KSnapshotService.xml
+PROPERTIES INCLUDE ${CMAKE_SOURCE_DIR}/common/snapshotinfotypes.h)
+
+qt_add_dbus_interface(service_dbus_src ${CMAKE_SOURCE_DIR}/service/org.kde.KSnapshotService.xml service_interface)
 
 target_sources(kio_snapshot PRIVATE
     snapshot.cpp

@@ -7,6 +7,8 @@
 #include "ksnapshotservice.h"
 #include "ksnapshotservice_debug.h"
 
+#include "../common/snapshotinfotypes.h"
+
 #include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
@@ -84,9 +86,9 @@ std::optional<QString> getAbsoluteSubvolumePath(uint64_t subvolume)
     return subvolumePathAbs;
 }
 
-std::optional<QVariantList> getSnapshotsForSubvolume(uint64_t subvolume, uint userId)
+std::optional<QList<SubvolumeSnapshotInfo>> getSnapshotsForSubvolume(uint64_t subvolume, uint userId)
 {
-    QVariantList snapshots;
+    QList<SubvolumeSnapshotInfo> snapshots;
     enum btrfs_util_error btrfs_err;
 
     std::optional<QString> subvolumePathAbs = getAbsoluteSubvolumePath(subvolume);
@@ -132,11 +134,11 @@ std::optional<QVariantList> getSnapshotsForSubvolume(uint64_t subvolume, uint us
             if (snapshotDirFd != -1) {
                 close(snapshotDirFd);
                 // user owns snapshot dir, so we can reveal it
-                QVariantMap snapshot;
-                snapshot["SubvolumeId"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.id));
-                snapshot["Path"_L1] = snapshotPath;
-                snapshot["CreationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.otime.tv_sec));
-                snapshot["CreationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(iter_info.otime.tv_nsec));
+                SubvolumeSnapshotInfo snapshot;
+                snapshot.subvolumeId = static_cast<qulonglong>(iter_info.id);
+                snapshot.path = snapshotPath;
+                snapshot.snapshotTimeSecs = static_cast<qulonglong>(iter_info.otime.tv_sec);
+                snapshot.snapshotTimeNanosecs = static_cast<qulonglong>(iter_info.otime.tv_nsec);
 
                 snapshots << snapshot;
             }
@@ -210,32 +212,32 @@ QString KSnapshotService::getPathForSubvolume(qulonglong subvolume)
     return subvolumePathAbs.value();
 }
 
-QVariantList KSnapshotService::getSnapshotsForSubvolume(qulonglong subvolume)
+QList<SubvolumeSnapshotInfo> KSnapshotService::getSnapshotsForSubvolume(qulonglong subvolume)
 {
     QDBusReply<uint> userIdReply = getUserId();
     if (!userIdReply.isValid()) {
         qCDebug(KSNAPSHOTSERVICE_LOG) << "couldn't get user ID, denying";
         sendErrorReply(QDBusError::AccessDenied);
-        return QVariantList();
+        return QList<SubvolumeSnapshotInfo>();
     }
     uint userId = userIdReply.value();
 
-    std::optional<QVariantList> snapshots = ::getSnapshotsForSubvolume(subvolume, userId);
+    std::optional<QList<SubvolumeSnapshotInfo>> snapshots = ::getSnapshotsForSubvolume(subvolume, userId);
     if (!snapshots.has_value()) {
         qCDebug(KSNAPSHOTSERVICE_LOG) << "getSnapshotsForSubvolume failed internally, denying";
         sendErrorReply(QDBusError::AccessDenied);
-        return QVariantList();
+        return QList<SubvolumeSnapshotInfo>();
     }
 
     return snapshots.value();
 }
 
-QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
+QList<FileSnapshotInfo> KSnapshotService::getSnapshotsForFile(const QString &path)
 {
     QDBusReply<uint> userIdReply = getUserId();
     if (!userIdReply.isValid()) {
         sendErrorReply(QDBusError::AccessDenied);
-        return QVariantList();
+        return QList<FileSnapshotInfo>();
     }
     uint userId = userIdReply.value();
 
@@ -244,13 +246,13 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
 
     if (!fileInfo.exists() || fileInfo.ownerId() != userId) {
         sendErrorReply(QDBusError::AccessDenied);
-        return QVariantList();
+        return QList<FileSnapshotInfo>();
     }
 
     int parentDirFd = openDirForUser(parentDir.absolutePath(), userId);
     if (parentDirFd == -1) {
         sendErrorReply(QDBusError::AccessDenied);
-        return QVariantList();
+        return QList<FileSnapshotInfo>();
     }
     uint64_t subvolume;
     enum btrfs_util_error btrfs_err = btrfs_util_subvolume_get_id_fd(parentDirFd, &subvolume);
@@ -262,24 +264,23 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
     std::optional<QString> subvolumeRootOpt = ::getAbsoluteSubvolumePath(subvolume);
     if (!subvolumeRootOpt.has_value()) {
         sendErrorReply(QDBusError::AccessDenied);
-        return QVariantList();
+        return QList<FileSnapshotInfo>();
     }
     QDir subvolumeRoot(subvolumeRootOpt.value());
 
     QString pathRel = subvolumeRoot.relativeFilePath(path);
 
-    std::optional<QVariantList> snapshotsOpt = ::getSnapshotsForSubvolume(subvolume, userId);
+    std::optional<QList<SubvolumeSnapshotInfo>> snapshotsOpt = ::getSnapshotsForSubvolume(subvolume, userId);
     if (!snapshotsOpt.has_value()) {
         sendErrorReply(QDBusError::AccessDenied);
-        return QVariantList();
+        return QList<FileSnapshotInfo>();
     }
-    QVariantList snapshots = snapshotsOpt.value();
+    QList<SubvolumeSnapshotInfo> snapshots = snapshotsOpt.value();
 
-    QVariantList fileSnapshots;
-    for (const QVariant &snapshotVar : snapshots) {
-        QVariantMap snapshot = snapshotVar.toMap();
-        QVariantMap fileSnapshot;
-        QString fileSnapshotPath = QDir(snapshot["Path"_L1].toString()).absoluteFilePath(pathRel);
+    QList<FileSnapshotInfo> fileSnapshots;
+    for (const SubvolumeSnapshotInfo &snapshot : snapshots) {
+        FileSnapshotInfo fileSnapshot;
+        QString fileSnapshotPath = QDir(snapshot.path).absoluteFilePath(pathRel);
         int fd = open(fileSnapshotPath.toUtf8().constData(), O_RDONLY);
         struct stat sb;
         if (fd == -1 || fstat(fd, &sb) == -1 || sb.st_uid != userId) {
@@ -294,32 +295,34 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
             qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << fileSnapshotPath << "returned" << ioctl_ret << std::strerror(errno);
         }
         close(fd);
-        fileSnapshot["Path"_L1] = fileSnapshotPath;
-        fileSnapshot["SnapshotCreationTimeSec"_L1] = snapshot["CreationTimeSec"_L1];
-        fileSnapshot["SnapshotCreationTimeNanosec"_L1] = snapshot["CreationTimeNanosec"_L1];
-        fileSnapshot["ModificationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_sec));
-        fileSnapshot["ModificationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_nsec));
+        fileSnapshot.path = fileSnapshotPath;
+        fileSnapshot.snapshotTimeSecs = snapshot.snapshotTimeSecs;
+        fileSnapshot.snapshotTimeNanosecs = snapshot.snapshotTimeNanosecs;
+        fileSnapshot.snapshotTimeSecs = static_cast<qulonglong>(sb.st_mtim.tv_sec);
+        fileSnapshot.modificationTimeNanosecs = static_cast<qulonglong>(sb.st_mtim.tv_nsec);
         if (ioctl_ret == 0) {
-            fileSnapshot["Generation"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(generation));
+            fileSnapshot.generation = static_cast<qulonglong>(generation);
         }
         fileSnapshots << fileSnapshot;
     }
 
     // the last entry is the queried file itself
     // this makes it convenient for the consumer to determine (by means of the Generation number) if the snapshots are actually modified wrt current file or not
-    QVariantMap currentInfo;
+    FileSnapshotInfo currentInfo;
     int fd = open(path.toUtf8().constData(), O_RDONLY);
     struct stat sb;
     if (fd != -1 && fstat(fd, &sb) != -1 && sb.st_uid == userId) {
-        currentInfo["Path"_L1] = path;
-        currentInfo["ModificationTimeSec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_sec));
-        currentInfo["ModificationTimeNanosec"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(sb.st_mtim.tv_nsec));
+        currentInfo.path = path;
+        currentInfo.modificationTimeSecs = static_cast<qulonglong>(sb.st_mtim.tv_sec);
+        currentInfo.modificationTimeNanosecs = static_cast<qulonglong>(sb.st_mtim.tv_nsec);
+        currentInfo.snapshotTimeSecs = std::nullopt;
+        currentInfo.snapshotTimeNanosecs = std::nullopt;
         unsigned int generation;
         int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
         if (ioctl_ret == -1) {
             qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << path << "returned" << ioctl_ret << std::strerror(errno);
         } else {
-            currentInfo["Generation"_L1] = QVariant::fromValue<qulonglong>(static_cast<qulonglong>(generation));
+            currentInfo.generation = static_cast<qulonglong>(generation);
         }
         fileSnapshots << currentInfo;
     }
@@ -330,6 +333,10 @@ QVariantList KSnapshotService::getSnapshotsForFile(const QString &path)
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
+    qDBusRegisterMetaType<FileSnapshotInfo>();
+    qDBusRegisterMetaType<QList<FileSnapshotInfo>>();
+    qDBusRegisterMetaType<SubvolumeSnapshotInfo>();
+    qDBusRegisterMetaType<QList<SubvolumeSnapshotInfo>>();
 
     QDBusConnection bus = QDBusConnection::systemBus();
 

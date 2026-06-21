@@ -80,9 +80,13 @@ public:
 
 SnapshotProtocol::SnapshotProtocol(const QByteArray &pool, const QByteArray &app)
     : ForwardingWorkerBase("snapshot", pool, app)
-    , service(new org::kde::ksnapshotservice("org.kde.ksnapshotservice"_L1, "/KSnapshotService"_L1, QDBusConnection::systemBus(), this))
 {
     KLocalizedString::setApplicationDomain(QByteArrayLiteral("kio_snapshot"));
+    qDBusRegisterMetaType<FileSnapshotInfo>();
+    qDBusRegisterMetaType<QList<FileSnapshotInfo>>();
+    qDBusRegisterMetaType<SubvolumeSnapshotInfo>();
+    qDBusRegisterMetaType<QList<SubvolumeSnapshotInfo>>();
+    service = new org::kde::ksnapshotservice("org.kde.ksnapshotservice"_L1, "/KSnapshotService"_L1, QDBusConnection::systemBus(), this);
 }
 
 SnapshotProtocol::~SnapshotProtocol()
@@ -122,30 +126,26 @@ KIO::WorkerResult SnapshotProtocol::listDir(const QUrl &url)
         return KIO::WorkerResult::fail(KIO::ERR_ACCESS_DENIED);
     }
 
-    QVariantList snapshots = snapshotQueryReply.value();
+    QList<SubvolumeSnapshotInfo> snapshots = snapshotQueryReply.value();
     KIO::UDSEntryList udsList;
-    for (const QVariant &snapshotV : snapshots) {
-        const QVariantMap &snapshot = qdbus_cast<QVariantMap>(snapshotV.value<QDBusArgument>());
-        QDir snapshotDir(snapshot["Path"_L1].toString());
-        qulonglong snapshotSubvolumeId = snapshot["SubvolumeId"_L1].toULongLong();
-        qulonglong creationSecs = snapshot["CreationTimeSec"_L1].toULongLong();
-        qulonglong creationNanosecs = snapshot["CreationTimeNanosec"_L1].toULongLong();
-        QDateTime creation = QDateTime::fromSecsSinceEpoch(creationSecs);
+    for (const SubvolumeSnapshotInfo &snapshot : snapshots) {
+        QDir snapshotDir(snapshot.path);
+        QDateTime creation = QDateTime::fromSecsSinceEpoch(snapshot.snapshotTimeSecs);
 
-        snapshotInfoMap[snapshotSubvolumeId] = snapshot;
+        snapshotInfoMap[snapshot.subvolumeId] = snapshot;
         QString dirName = i18n("Snapshot at %1", QLocale::system().toString(creation, QLocale::ShortFormat));
 
         KIO::UDSEntry entry;
-        entry.fastInsert(KIO::UDSEntry::UDS_NAME, QString::number(snapshotSubvolumeId));
-        entry.fastInsert(KIO::UDSEntry::UDS_SUBVOL_ID, snapshotSubvolumeId);
+        entry.fastInsert(KIO::UDSEntry::UDS_NAME, QString::number(snapshot.subvolumeId));
+        entry.fastInsert(KIO::UDSEntry::UDS_SUBVOL_ID, snapshot.subvolumeId);
         entry.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, dirName);
-        entry.fastInsert(KIO::UDSEntry::UDS_CREATION_TIME, creationSecs);
-        entry.fastInsert(KIO::UDSEntry::UDS_CREATION_TIME_NS_OFFSET, creationNanosecs);
+        entry.fastInsert(KIO::UDSEntry::UDS_CREATION_TIME, snapshot.snapshotTimeSecs);
+        entry.fastInsert(KIO::UDSEntry::UDS_CREATION_TIME_NS_OFFSET, snapshot.snapshotTimeNanosecs);
         entry.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, "inode/directory"_L1);
         QUrl targetUrl;
         targetUrl.setScheme("snapshot"_L1);
         targetUrl.setHost(snapshotUrl.host());
-        targetUrl.setPath(QDir::cleanPath("%1/"_L1.arg(QString::number(snapshotSubvolumeId))));
+        targetUrl.setPath(QDir::cleanPath("%1/"_L1.arg(QString::number(snapshot.subvolumeId))));
         entry.fastInsert(KIO::UDSEntry::UDS_TARGET_URL, targetUrl.toString(QUrl::FullyEncoded));
         qCDebug(KIO_SNAPSHOT) << entry;
         udsList << entry;
@@ -180,7 +180,7 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
     if (snapshotUrl.snapshotId().has_value() && snapshotUrl.actualPath().isEmpty()) {
         qulonglong snapshotId = snapshotUrl.snapshotId().value();
 
-        QVariantMap snapshotInfo;
+        SubvolumeSnapshotInfo snapshotInfo;
         if (snapshotInfoMap.contains(snapshotId)) {
             snapshotInfo = snapshotInfoMap[snapshotId];
         } else {
@@ -189,16 +189,15 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
             if (!snapshotQueryReply.isValid()) {
                 return KIO::WorkerResult::fail(KIO::ERR_ACCESS_DENIED);
             }
-            for (const QVariant &snapshotV : snapshotQueryReply.value()) {
-                const QVariantMap &snapshotMap = qdbus_cast<QVariantMap>(snapshotV.value<QDBusArgument>());
-                snapshotInfoMap[snapshotMap["SubvolumeId"_L1].toULongLong()] = snapshotMap;
-                if (snapshotMap["SubvolumeId"_L1].toULongLong() == snapshotId) {
-                    snapshotInfo = snapshotMap;
+            for (const SubvolumeSnapshotInfo &snapshot : snapshotQueryReply.value()) {
+                snapshotInfoMap[snapshot.subvolumeId] = snapshot;
+                if (snapshot.subvolumeId == snapshotId) {
+                    snapshotInfo = snapshot;
                 }
             }
         }
 
-        QDateTime creation = QDateTime::fromSecsSinceEpoch(snapshotInfo["CreationTimeSec"_L1].toULongLong());
+        QDateTime creation = QDateTime::fromSecsSinceEpoch(snapshotInfo.snapshotTimeSecs);
         QString dirName = i18n("Snapshot at %1", QLocale::system().toString(creation, QLocale::ShortFormat));
 
         KIO::UDSEntry uds;
@@ -209,7 +208,7 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
         uds.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s);
         uds.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR);
         uds.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s);
-        uds.fastInsert(KIO::UDSEntry::UDS_CREATION_TIME, snapshotInfo["CreationTimeSec"_L1].toULongLong());
+        uds.fastInsert(KIO::UDSEntry::UDS_CREATION_TIME, snapshotInfo.snapshotTimeSecs);
 
         statEntry(uds);
         return KIO::WorkerResult::pass();

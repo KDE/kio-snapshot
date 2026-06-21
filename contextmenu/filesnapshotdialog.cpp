@@ -21,9 +21,6 @@
 
 using namespace Qt::StringLiterals;
 
-// const int SnapshotCreationTimeRole = Qt::UserRole + 1;
-// const int GenerationRole = Qt::UserRole + 1;
-
 class FileSnapshotsModel : public QAbstractTableModel
 {
     Q_OBJECT
@@ -41,7 +38,7 @@ public:
         });
         for (qsizetype i = 0; i < snapshotsInfoSorted.size(); i++) {
             const FileSnapshotInfo &info = snapshotsInfoSorted.at(i);
-            if (i == snapshotsInfoSorted.size() - 1 || snapshotsInfoSorted.at(i + 1).generation != info.generation) {
+            if (i == 0 || snapshotsInfoSorted.at(i - 1).generation != info.generation) {
                 files << info;
             }
         }
