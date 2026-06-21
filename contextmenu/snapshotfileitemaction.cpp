@@ -6,6 +6,9 @@
 
 #include "snapshotfileitemaction.h"
 #include "debug.h"
+#include "filesnapshotdialog.h"
+
+#include "../common/snapshotinfotypes.h"
 
 #include "service_interface.h"
 
@@ -21,8 +24,6 @@
 #include <QList>
 #include <QMenu>
 #include <QUrl>
-#include <kjob.h>
-#include <qloggingcategory.h>
 
 using namespace Qt::StringLiterals;
 
@@ -81,13 +82,32 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
             return actions;
         }
         QVariantList snapshotsVars = snapshotQueryReply.value();
-        QList<QVariantMap> snapshots;
+        QList<FileSnapshotInfo> snapshotInfos;
         for (const QVariant &snapshotV : snapshotsVars) {
-            snapshots << qdbus_cast<QVariantMap>(snapshotV.value<QDBusArgument>());
+            QVariantMap snapshotMap = qdbus_cast<QVariantMap>(snapshotV.value<QDBusArgument>());
+            FileSnapshotInfo snapshotInfo;
+            snapshotInfo.path = snapshotMap.value("Path"_L1).toString();
+            snapshotInfo.generation = snapshotMap.value("Generation"_L1).toULongLong();
+            if (snapshotMap.contains("SnapshotCreationTimeSecs"_L1)) {
+                snapshotInfo.snapshotTimeSecs = snapshotMap.value("SnapshotCreationTimeSecs"_L1).toULongLong();
+                snapshotInfo.snapshotTimeNanosecs = snapshotMap.value("SnapshotCreationTimeNanosecs"_L1).toULongLong();
+            } else {
+                snapshotInfo.snapshotTimeSecs = std::nullopt;
+                snapshotInfo.snapshotTimeNanosecs = std::nullopt;
+            }
+            snapshotInfo.modificationTimeSecs = snapshotMap.value("ModificationTimeSecs"_L1).toULongLong();
+            snapshotInfo.modificationTimeNanosecs = snapshotMap.value("ModificationTimeNanosecs"_L1).toULongLong();
+            snapshotInfos << snapshotInfo;
         }
 
         QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18n("View snapshots…"), parentWidget);
-        // TODO actually implement the dialog box...
+        connect(action, &QAction::triggered, this, [parentWidget, itemUrl, snapshotInfos]() {
+            FileSnapshotDialog *dlg = new FileSnapshotDialog(itemUrl, snapshotInfos, parentWidget);
+            dlg->show();
+            dlg->raise();
+            dlg->activateWindow();
+        });
+
         actions << action;
     }
 
