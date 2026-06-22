@@ -9,17 +9,26 @@
 
 #include "../common/snapshotinfotypes.h"
 
+#include <KIO/CopyJob>
+#include <KIO/OpenUrlJob>
+
 #include <KDirModel>
 #include <KFileItem>
 #include <KFileItemDelegate>
 #include <KFormat>
 #include <KLocalizedString>
 
+#include <QAbstractItemView>
+#include <QHeaderView>
 #include <QLayout>
+#include <QPushButton>
 #include <QTreeView>
 #include <QUrl>
+#include <kio/filecopyjob.h>
 
 using namespace Qt::StringLiterals;
+
+const int PathRole = Qt::UserRole + 1;
 
 class FileSnapshotsModel : public QAbstractTableModel
 {
@@ -38,7 +47,8 @@ public:
         });
         for (qsizetype i = 0; i < snapshotsInfoSorted.size(); i++) {
             const FileSnapshotInfo &info = snapshotsInfoSorted.at(i);
-            if (i == 0 || snapshotsInfoSorted.at(i - 1).generation != info.generation) {
+            if (i == 0 || snapshotsInfoSorted.at(i - 1).modificationTimeSecs != info.modificationTimeSecs
+                || snapshotsInfoSorted.at(i - 1).modificationTimeNanosecs != info.modificationTimeNanosecs) {
                 files << info;
             }
         }
@@ -83,12 +93,12 @@ public:
             case 0:
                 if (snapshotInfo.snapshotTimeSecs.has_value()) {
                     QDateTime creation = QDateTime::fromSecsSinceEpoch(snapshotInfo.snapshotTimeSecs.value());
-                    return QLocale::system().toString(creation, QLocale::ShortFormat);
+                    return fmt.formatRelativeDateTime(creation, QLocale::LongFormat);
                 } else {
                     return i18n("Current");
                 }
             case 1:
-                return KFormat().formatByteSize(fileItem.size());
+                return fmt.formatByteSize(fileItem.size());
             default:
                 return QVariant();
             }
@@ -98,27 +108,68 @@ public:
             return QIcon::fromTheme(fileItem.iconName());
         }
 
+        if (role == PathRole) {
+            return snapshotInfo.path;
+        }
+
         return QVariant();
     }
 
 private:
     QList<FileSnapshotInfo> files;
+    KFormat fmt;
 };
 
 FileSnapshotDialog::FileSnapshotDialog(const QUrl &fileUrl, const QList<FileSnapshotInfo> &snapshotsInfo, QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(i18n("Snapshots for %1", fileUrl.toLocalFile()));
+    resize(400, 500);
 
-    QLayout *mainLayout = new QVBoxLayout();
+    QVBoxLayout *mainLayout = new QVBoxLayout();
     setLayout(mainLayout);
 
     QTreeView *view = new QTreeView(this);
+    view->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
+    view->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
+    view->setRootIsDecorated(false);
+    view->setItemsExpandable(false);
+    view->setAlternatingRowColors(true);
     FileSnapshotsModel *model = new FileSnapshotsModel();
     view->setModel(model);
     model->setFiles(snapshotsInfo);
+    view->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+
+    QHBoxLayout *buttonsLayout = new QHBoxLayout();
+    QPushButton *openBtn = new QPushButton(i18n("Open"), this);
+    openBtn->setIcon(QIcon::fromTheme("document-open"_L1));
+    connect(openBtn, &QPushButton::clicked, this, [this, view, model]() {
+        QModelIndex idx = view->selectionModel()->selectedRows().first();
+        QString path = model->data(idx, PathRole).toString();
+        KJob *openUrlJob = new KIO::OpenUrlJob(QUrl::fromLocalFile(path), this);
+        openUrlJob->start();
+    });
+    openBtn->setEnabled(false);
+    QPushButton *restoreBtn = new QPushButton(i18n("Restore"), this);
+    restoreBtn->setIcon(QIcon::fromTheme("document-revert"_L1));
+    connect(restoreBtn, &QPushButton::clicked, this, [view, model, fileUrl]() {
+        QModelIndex idx = view->selectionModel()->selectedRows().first();
+        QString srcPath = model->data(idx, PathRole).toString();
+        KJob *copyJob = KIO::copy(QUrl::fromLocalFile(srcPath), fileUrl, KIO::Overwrite);
+        copyJob->start();
+    });
+    restoreBtn->setEnabled(false);
+    buttonsLayout->addStretch();
+    buttonsLayout->addWidget(openBtn);
+    buttonsLayout->addWidget(restoreBtn);
+
+    connect(view->selectionModel(), &QItemSelectionModel::selectionChanged, this, [view, openBtn, restoreBtn]() {
+        openBtn->setEnabled(view->selectionModel()->hasSelection());
+        restoreBtn->setEnabled(view->selectionModel()->hasSelection() && view->selectionModel()->selectedRows().first().row() != 0);
+    });
 
     layout()->addWidget(view);
+    layout()->addItem(buttonsLayout);
 }
 
 #include "filesnapshotdialog.moc"
