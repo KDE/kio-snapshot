@@ -298,7 +298,7 @@ QList<FileSnapshotInfo> KSnapshotService::getSnapshotsForFile(const QString &pat
         fileSnapshot.path = fileSnapshotPath;
         fileSnapshot.snapshotTimeSecs = snapshot.snapshotTimeSecs;
         fileSnapshot.snapshotTimeNanosecs = snapshot.snapshotTimeNanosecs;
-        fileSnapshot.snapshotTimeSecs = static_cast<qulonglong>(sb.st_mtim.tv_sec);
+        fileSnapshot.modificationTimeSecs = static_cast<qulonglong>(sb.st_mtim.tv_sec);
         fileSnapshot.modificationTimeNanosecs = static_cast<qulonglong>(sb.st_mtim.tv_nsec);
         if (ioctl_ret == 0) {
             fileSnapshot.generation = static_cast<qulonglong>(generation);
