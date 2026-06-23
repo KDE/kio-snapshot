@@ -10,6 +10,7 @@
 #include "../common/snapshotinfotypes.h"
 
 #include <KIO/CopyJob>
+#include <KIO/OpenFileManagerWindowJob>
 #include <KIO/OpenUrlJob>
 
 #include <KDirModel>
@@ -19,8 +20,12 @@
 #include <KLocalizedString>
 
 #include <QAbstractItemView>
+#include <QClipboard>
+#include <QDir>
+#include <QGuiApplication>
 #include <QHeaderView>
 #include <QLayout>
+#include <QMenu>
 #include <QPushButton>
 #include <QTreeView>
 #include <QUrl>
@@ -144,6 +149,31 @@ FileSnapshotDialog::FileSnapshotDialog(const QUrl &fileUrl, const QList<FileSnap
             QString path = model->data(idx, PathRole).toString();
             KJob *openUrlJob = new KIO::OpenUrlJob(QUrl::fromLocalFile(path), this);
             openUrlJob->start();
+        }
+    });
+
+    view->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(view, &QTreeView::customContextMenuRequested, this, [this, model, view](const QPoint &pos) {
+        const QModelIndex idx = view->indexAt(pos);
+        if (idx.isValid()) {
+            QMenu menu;
+            QString path = model->data(idx, PathRole).toString();
+
+            QAction *copyPathAction = menu.addAction(QIcon::fromTheme("edit-copy-path"_L1), i18n("Copy Location"));
+            connect(copyPathAction, &QAction::triggered, this, [path] {
+                QClipboard *clipboard = QGuiApplication::clipboard();
+                if (clipboard) {
+                    clipboard->setText(path);
+                }
+            });
+
+            QAction *openInDirAction = menu.addAction(QIcon::fromTheme("system-file-manager"_L1), i18n("Open Containing Folder"));
+            connect(openInDirAction, &QAction::triggered, this, [path] {
+                KIO::highlightInFileManager({QUrl(path)});
+            });
+
+            // TODO this results in a slightly off position for the context menu, why?
+            menu.exec(view->mapToGlobal(pos));
         }
     });
 
