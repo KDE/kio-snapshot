@@ -24,7 +24,6 @@
 #include <QPushButton>
 #include <QTreeView>
 #include <QUrl>
-#include <kio/filecopyjob.h>
 
 using namespace Qt::StringLiterals;
 
