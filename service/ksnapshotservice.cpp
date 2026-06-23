@@ -20,7 +20,6 @@
 #include <cstring>
 #include <fcntl.h>
 #include <linux/fs.h>
-#include <qlogging.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>

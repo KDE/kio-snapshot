@@ -20,10 +20,6 @@
 #include <QDir>
 #include <QLocale>
 #include <QUrl>
-#include <kio/global.h>
-#include <kio/udsentry.h>
-#include <qdbuspendingreply.h>
-#include <qloggingcategory.h>
 
 using namespace Qt::StringLiterals;
 
