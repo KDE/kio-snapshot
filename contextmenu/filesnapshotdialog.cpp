@@ -139,6 +139,14 @@ FileSnapshotDialog::FileSnapshotDialog(const QUrl &fileUrl, const QList<FileSnap
     model->setFiles(snapshotsInfo);
     view->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
 
+    connect(view, &QTreeView::doubleClicked, this, [this, model](const QModelIndex &idx) {
+        if (idx.isValid()) {
+            QString path = model->data(idx, PathRole).toString();
+            KJob *openUrlJob = new KIO::OpenUrlJob(QUrl::fromLocalFile(path), this);
+            openUrlJob->start();
+        }
+    });
+
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
     QPushButton *openBtn = new QPushButton(i18n("Open"), this);
     openBtn->setIcon(QIcon::fromTheme("document-open"_L1));
