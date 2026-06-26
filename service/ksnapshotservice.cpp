@@ -288,25 +288,17 @@ QList<FileSnapshotInfo> KSnapshotService::getSnapshotsForFile(const QString &pat
             }
             continue;
         }
-        unsigned int generation;
-        int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
-        if (ioctl_ret == -1) {
-            qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << fileSnapshotPath << "returned" << ioctl_ret << std::strerror(errno);
-        }
         close(fd);
         fileSnapshot.path = fileSnapshotPath;
         fileSnapshot.snapshotTimeSecs = snapshot.snapshotTimeSecs;
         fileSnapshot.snapshotTimeNanosecs = snapshot.snapshotTimeNanosecs;
         fileSnapshot.modificationTimeSecs = static_cast<qulonglong>(sb.st_mtim.tv_sec);
         fileSnapshot.modificationTimeNanosecs = static_cast<qulonglong>(sb.st_mtim.tv_nsec);
-        if (ioctl_ret == 0) {
-            fileSnapshot.generation = static_cast<qulonglong>(generation);
-        }
+        fileSnapshot.subvolumeId = static_cast<qulonglong>(snapshot.subvolumeId);
         fileSnapshots << fileSnapshot;
     }
 
     // the last entry is the queried file itself
-    // this makes it convenient for the consumer to determine (by means of the Generation number) if the snapshots are actually modified wrt current file or not
     FileSnapshotInfo currentInfo;
     int fd = open(path.toUtf8().constData(), O_RDONLY);
     struct stat sb;
@@ -316,14 +308,9 @@ QList<FileSnapshotInfo> KSnapshotService::getSnapshotsForFile(const QString &pat
         currentInfo.modificationTimeNanosecs = static_cast<qulonglong>(sb.st_mtim.tv_nsec);
         currentInfo.snapshotTimeSecs = std::nullopt;
         currentInfo.snapshotTimeNanosecs = std::nullopt;
-        unsigned int generation;
-        int ioctl_ret = ioctl(fd, FS_IOC_GETVERSION, &generation);
-        if (ioctl_ret == -1) {
-            qCDebug(KSNAPSHOTSERVICE_LOG()) << "FS_IOC_GETVERSION ioctl on" << path << "returned" << ioctl_ret << std::strerror(errno);
-        } else {
-            currentInfo.generation = static_cast<qulonglong>(generation);
-        }
+        currentInfo.subvolumeId = static_cast<qulonglong>(subvolume);
         fileSnapshots << currentInfo;
+        close(fd);
     }
 
     return fileSnapshots;

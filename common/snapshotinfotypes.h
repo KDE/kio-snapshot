@@ -17,7 +17,7 @@ class FileSnapshotInfo
 {
 public:
     QString path;
-    qulonglong generation;
+    qulonglong subvolumeId;
     std::optional<qulonglong> snapshotTimeSecs;
     std::optional<qulonglong> snapshotTimeNanosecs;
     qulonglong modificationTimeSecs;
@@ -32,7 +32,7 @@ inline QDBusArgument &operator<<(QDBusArgument &argument, const FileSnapshotInfo
     QVariantMap map;
 
     map["Path"_L1] = data.path;
-    map["Generation"_L1] = data.generation;
+    map["SubvolumeId"_L1] = data.subvolumeId;
     map["ModificationTimeSec"_L1] = data.modificationTimeSecs;
     map["ModificationTimeNanosec"_L1] = data.modificationTimeNanosecs;
     if (data.snapshotTimeSecs.has_value()) {
@@ -52,7 +52,7 @@ inline const QDBusArgument &operator>>(const QDBusArgument &argument, FileSnapsh
     argument >> map;
 
     data.path = map.value("Path"_L1).toString();
-    data.generation = map.value("Generation"_L1).toULongLong();
+    data.subvolumeId = map.value("SubvolumeId"_L1).toULongLong();
     data.modificationTimeSecs = map.value("ModificationTimeSec"_L1).toULongLong();
     data.modificationTimeNanosecs = map.value("ModificationTimeNanosec"_L1).toULongLong();
     if (map.contains("SnapshotCreationTimeSec"_L1)) {
