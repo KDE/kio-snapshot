@@ -5,7 +5,7 @@
 */
 
 #include "snapshot.h"
-#include "debug.h"
+#include "snapshot_debug.h"
 
 #include "service_interface.h"
 

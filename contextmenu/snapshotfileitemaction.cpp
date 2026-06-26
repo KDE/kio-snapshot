@@ -6,7 +6,6 @@
 
 #include "snapshotfileitemaction.h"
 #include "debug.h"
-#include "filesnapshotdialog.h"
 
 #include "../common/snapshotinfotypes.h"
 
@@ -89,14 +88,12 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
             qCDebug(SNAPSHOT_FILEITEMACTION()) << "invalid reply for getSnapshotsForFile" << itemUrl;
             return actions;
         }
-        QList<FileSnapshotInfo> snapshotInfos = snapshotQueryReply.value();
+        // QList<FileSnapshotInfo> snapshotInfos = snapshotQueryReply.value();
 
         QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18n("View snapshots…"), parentWidget);
-        connect(action, &QAction::triggered, this, [parentWidget, itemUrl, snapshotInfos]() {
-            FileSnapshotDialog *dlg = new FileSnapshotDialog(itemUrl, snapshotInfos, parentWidget);
-            dlg->show();
-            dlg->raise();
-            dlg->activateWindow();
+        connect(action, &QAction::triggered, this, [this, item]() {
+            KIO::OpenUrlJob *job = new KIO::OpenUrlJob(QUrl("filesnapshots://%1"_L1.arg(item.localPath())), "inode/directory"_L1, this);
+            job->start();
         });
 
         actions << action;

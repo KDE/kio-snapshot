@@ -9,7 +9,6 @@ qt_add_dbus_interface(service_dbus_src ${CMAKE_SOURCE_DIR}/service/org.kde.KSnap
 
 target_sources(snapshotfileitemaction PRIVATE
     snapshotfileitemaction.cpp
-    filesnapshotdialog.cpp
     ${service_dbus_src}
 )
 

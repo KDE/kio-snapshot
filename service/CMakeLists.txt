@@ -32,5 +32,5 @@ install(FILES
   org.kde.ksnapshotservice.conf
   DESTINATION ${KDE_INSTALL_DBUSDIR}/system.d/)
 install(FILES
-  ${CMAKE_BINARY_DIR}/org.kde.KSnapshotService.xml
+  ${CMAKE_SOURCE_DIR}/service/org.kde.KSnapshotService.xml
   DESTINATION ${KDE_INSTALL_DBUSINTERFACEDIR})
