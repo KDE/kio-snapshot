@@ -39,9 +39,9 @@ Output: Information about the prior versions of this file, as found in various s
 Output format is an array of variants, where all except the last one have the following keys:
 
   - `Path`
+  - `SubvolumeId`
   - `SnapshotCreationTimeSec` & `SnapshotCreationTimeNanosec` -- when the containing snapshot subvolume was created
   - `ModificationTimeSec` & `ModificationTimeNanosec` -- the file's own modification time
-  - `Generation` -- the *generation number* of this inode as tracked by Btrfs, which is incremented on any change to data or metadata. useful to determine whether any actual changes have occurred.
     
 The last in the array represents the file that was queried itself, and contains all the keys above except for `SnapshotCreationTimeSec` and `SnapshotCreationTimeNanosec`.
 
