@@ -1,5 +1,0 @@
-[D-BUS Service]
-Name=org.kde.ksnapshotservice
-Exec=@KDE_INSTALL_FULL_LIBEXECDIR@/ksnapshotservice
-User=root
-SystemdService=ksnapshotservice.service

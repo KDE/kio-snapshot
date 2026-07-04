@@ -1,7 +1,0 @@
-[Unit]
-Description=Snapshot access service for KDE
-
-[Service]
-Type=dbus
-BusName=org.kde.ksnapshotservice
-ExecStart=@KDE_INSTALL_FULL_LIBEXECDIR@/ksnapshotservice

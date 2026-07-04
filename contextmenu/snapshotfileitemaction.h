@@ -7,8 +7,6 @@
 #ifndef SNAPSHOT_H
 #define SNAPSHOT_H
 
-#include "service_interface.h"
-
 #include <KAbstractFileItemActionPlugin>
 #include <KFileItemListProperties>
 
@@ -21,9 +19,6 @@ public:
     SnapshotFileItemAction(QObject *parent);
 
     QList<QAction *> actions(const KFileItemListProperties &fileItemInfos, QWidget *parentWidget) override;
-
-private:
-    org::kde::ksnapshotservice *service;
 };
 
 #endif

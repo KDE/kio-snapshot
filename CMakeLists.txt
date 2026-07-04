@@ -23,7 +23,6 @@ include(FeatureSummary)
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
     Core
-    DBus
 )
 
 find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
@@ -46,6 +45,9 @@ kde_clang_format(${ALL_CLANG_FORMAT_SOURCE_FILES})
 
 kde_configure_git_pre_commit_hook(CHECKS CLANG_FORMAT)
 
-add_subdirectory(service)
+add_library(btrfssnapshots_lib STATIC common/btrfssnapshots.cpp)
+target_link_libraries(btrfssnapshots_lib Qt::Core PkgConfig::libbtrfsutil)
+target_include_directories(btrfssnapshots_lib PUBLIC common/)
+
 add_subdirectory(kioworker)
 add_subdirectory(contextmenu)

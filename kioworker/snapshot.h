@@ -7,12 +7,13 @@
 #ifndef SNAPSHOT_H
 #define SNAPSHOT_H
 
-#include "service_interface.h"
-
 #include <KIO/ForwardingWorkerBase>
 #include <KIO/WorkerBase>
 
-class SubvolumeSnapshotInfo;
+namespace BtrfsSnapshots
+{
+class SubvolumeSnapshot;
+}
 
 class SnapshotProtocol : public KIO::ForwardingWorkerBase
 {
@@ -29,8 +30,7 @@ protected:
     bool rewriteUrl(const QUrl &url, QUrl &newUrl) override;
 
 private:
-    org::kde::ksnapshotservice *service;
-    QHash<qulonglong, SubvolumeSnapshotInfo> snapshotInfoMap;
+    QHash<qulonglong, BtrfsSnapshots::SubvolumeSnapshot> snapshotInfoMap;
 };
 
 #endif

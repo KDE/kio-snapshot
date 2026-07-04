@@ -7,8 +7,6 @@
 #ifndef SNAPSHOT_H
 #define SNAPSHOT_H
 
-#include "service_interface.h"
-
 #include <KFormat>
 #include <KIO/WorkerBase>
 
@@ -24,7 +22,6 @@ public:
     KIO::WorkerResult mimetype(const QUrl &url) override;
 
 private:
-    org::kde::ksnapshotservice *service;
     KFormat fmt;
 };
 
