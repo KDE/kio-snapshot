@@ -1,0 +1,17 @@
+version = 1
+
+[[annotations]]
+path = "README.md"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = ["kioworker/filesnapshots.json", "kioworker/snapshot.json", "contextmenu/snapshotfileitemaction.json"]
+SPDX-FileCopyrightText = "2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = ".gitignore"
+SPDX-FileCopyrightText = "KDE Contributors"
+SPDX-License-Identifier = "CC0-1.0"
