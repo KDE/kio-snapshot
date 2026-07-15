@@ -1,6 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
 cmake_minimum_required(VERSION 3.16)
 
-project(kde-snapshot-service VERSION 0.0.1)
+project(kio-snapshot VERSION 0.0.1)
 
 set(QT_MIN_VERSION 6.5.0)
 set(KF_MIN_VERSION 6.0.0)
@@ -51,3 +54,5 @@ target_include_directories(btrfssnapshots_lib PUBLIC common/)
 
 add_subdirectory(kioworker)
 add_subdirectory(contextmenu)
+
+install(FILES org.kde.kio_snapshot.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
 kcoreaddons_add_plugin(kio_snapshot
     INSTALL_NAMESPACE kf6/kio
 )
