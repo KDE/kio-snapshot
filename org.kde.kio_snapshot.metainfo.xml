@@ -24,8 +24,12 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
     <url type="bugtracker">https://bugs.kde.org/enter_bug.cgi?format=guided&amp;product=kio-snapshot</url>
     <screenshots>
         <screenshot type="default">
-            <caption>Dolphin showing snapshots of a file and a folder.</caption>
-            <image type="source" width="1701" height="1023">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot.png</image>
+            <caption>Dolphin showing snapshots of a single file.</caption>
+            <image type="source" width="1130" height="788">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot-file.png</image>
+        </screenshot>
+        <screenshot>
+            <caption>Dolphin showing snapshots of a folder.</caption>
+            <image type="source" width="1130" height="788">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot-folder.png</image>
         </screenshot>
     </screenshots>
     <releases>
