@@ -54,7 +54,7 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
                 return actions;
             }
             auto subvolumeId = subvolumeIdOpt.value();
-            QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18n("Browse snapshots…"), parentWidget);
+            QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "Browse snapshots…"), parentWidget);
             connect(action, &QAction::triggered, this, [this, subvolumeId]() {
                 KIO::OpenUrlJob *job = new KIO::OpenUrlJob(QUrl("snapshot:///%1"_L1.arg(QString::number(subvolumeId))), "inode/directory"_L1, this);
                 job->start();
@@ -63,7 +63,7 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
         }
     } else if (item.isLocalFile()) {
         if (!BtrfsSnapshots::getSnapshotsForFile(itemUrl.toLocalFile()).empty()) {
-            QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18n("View snapshots…"), parentWidget);
+            QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "View snapshots…"), parentWidget);
             connect(action, &QAction::triggered, this, [this, item]() {
                 KIO::OpenUrlJob *job = new KIO::OpenUrlJob(QUrl("filesnapshots://%1"_L1.arg(item.localPath())), "inode/directory"_L1, this);
                 job->start();

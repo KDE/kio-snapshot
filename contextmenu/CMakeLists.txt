@@ -2,6 +2,10 @@ kcoreaddons_add_plugin(snapshotfileitemaction
     INSTALL_NAMESPACE kf6/kfileitemaction
 )
 
+target_compile_definitions(snapshotfileitemaction PRIVATE
+    TRANSLATION_DOMAIN="snapshotfileitemaction"
+)
+
 target_sources(snapshotfileitemaction PRIVATE
     snapshotfileitemaction.cpp
     ${service_dbus_src}
