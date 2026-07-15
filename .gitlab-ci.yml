@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: KDE Contributors
+# SPDX-License-Identifier: CC0-1.0
+
+include:
+  - project: sysadmin/ci-utilities
+    file:
+      - /gitlab-templates/reuse-lint.yml
+      - /gitlab-templates/linux-qt6.yml
+      - /gitlab-templates/json-validation.yml
