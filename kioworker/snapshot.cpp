@@ -218,7 +218,7 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
             }
         }
 
-        QString dirName = i18nc("@title denoting a snapshot taken at a specific time - %1 is the timestamp",
+        QString dirName = i18nc("@title denoting a snapshot taken at a specific time; %1 is the timestamp",
                                 "Snapshot at %1",
                                 QLocale::system().toString(snapshotInfo.snapshotted, QLocale::ShortFormat));
 
