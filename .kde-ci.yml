@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: KDE Contributors
+# SPDX-License-Identifier: CC0-1.0
+
+Dependencies:
+- 'on': ['Linux/Qt6']
+  'require':
+    'frameworks/extra-cmake-modules': '@stable'
+    'frameworks/kio': '@stable'
+    'frameworks/ki8n': '@stable'
+    'third-party/libbtrfsutil': '@latest'
+
+Options:
+  in-source-build: False
+  test-before-installing: False
+  run-tests: False
+  run-cppcheck: True
+  cppcheck-arguments: '--enable=warning,style,performance'
+  require-cppcheck-clean: True
