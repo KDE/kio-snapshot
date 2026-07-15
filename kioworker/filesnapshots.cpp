@@ -46,9 +46,8 @@ extern "C" int Q_DECL_EXPORT kdemain(int argc, char **argv)
 }
 
 FileSnapshotsProtocol::FileSnapshotsProtocol(const QByteArray &pool, const QByteArray &app)
-    : WorkerBase("snapshot", pool, app)
+    : WorkerBase("filesnapshots", pool, app)
 {
-    KLocalizedString::setApplicationDomain(QByteArrayLiteral("kio_snapshot"));
 }
 
 FileSnapshotsProtocol::~FileSnapshotsProtocol()

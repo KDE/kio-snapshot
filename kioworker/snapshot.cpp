@@ -81,7 +81,6 @@ public:
 SnapshotProtocol::SnapshotProtocol(const QByteArray &pool, const QByteArray &app)
     : ForwardingWorkerBase("snapshot", pool, app)
 {
-    KLocalizedString::setApplicationDomain(QByteArrayLiteral("kio_snapshot"));
 }
 
 SnapshotProtocol::~SnapshotProtocol()
