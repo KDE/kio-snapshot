@@ -93,7 +93,7 @@ bool SnapshotProtocol::rewriteUrl(const QUrl &url, QUrl &newUrl)
     auto snapshotId = snapshotUrl.snapshotId();
     auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(snapshotId.value());
     if (!snapshotPathOpt.has_value()) {
-        warning(i18n("Could not open snapshot"));
+        warning(i18nc("@info warning", "Could not open snapshot"));
         return false;
     }
     const QString &snapshotPath = snapshotPathOpt.value();
@@ -115,7 +115,8 @@ KIO::WorkerResult SnapshotProtocol::listDir(const QUrl &url)
             if (!BtrfsSnapshots::getSnapshotsForSubvolume(path).empty()) {
                 KIO::UDSEntry entry;
                 entry.fastInsert(KIO::UDSEntry::UDS_NAME, "subvolume%1"_L1.arg(QString::number(id)));
-                entry.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, "Snapshots for %1"_L1.arg(path));
+                entry.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME,
+                                 i18nc("@title denoting a listing of snapshots for a directory; %1 is the path to the directory", "Snapshots for %1", path));
                 entry.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, "view-history"_L1);
                 entry.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, QT_STAT_DIR);
                 entry.fastInsert(KIO::UDSEntry::UDS_URL, "snapshot:///%1"_L1.arg(QString::number(id)));
@@ -142,7 +143,9 @@ KIO::WorkerResult SnapshotProtocol::listDir(const QUrl &url)
         QDir snapshotDir(snapshot.path);
 
         snapshotInfoMap[snapshot.subvolumeId] = snapshot;
-        QString dirName = i18n("Snapshot at %1", QLocale::system().toString(snapshot.snapshotted, QLocale::ShortFormat));
+        QString dirName = i18nc("@title denoting a snapshot taken at a specific time; %1 is the timestamp",
+                                "Snapshot at %1",
+                                QLocale::system().toString(snapshot.snapshotted, QLocale::ShortFormat));
 
         KIO::UDSEntry entry;
         entry.fastInsert(KIO::UDSEntry::UDS_NAME, QString::number(snapshot.subvolumeId));
@@ -215,13 +218,15 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
             }
         }
 
-        QString dirName = i18n("Snapshot at %1", QLocale::system().toString(snapshotInfo.snapshotted, QLocale::ShortFormat));
+        QString dirName = i18nc("@title denoting a snapshot taken at a specific time - %1 is the timestamp",
+                                "Snapshot at %1",
+                                QLocale::system().toString(snapshotInfo.snapshotted, QLocale::ShortFormat));
 
         KIO::UDSEntry uds;
         uds.reserve(7);
         uds.fastInsert(KIO::UDSEntry::UDS_NAME, QString::number(snapshotId));
         uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, dirName);
-        uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_TYPE, i18n("Snapshot"));
+        uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_TYPE, i18nc("denoting that this directory is a snapshot", "Snapshot"));
         uds.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s);
         uds.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR);
         uds.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s);
@@ -239,8 +244,9 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
     KIO::UDSEntry uds;
     uds.reserve(7);
     uds.fastInsert(KIO::UDSEntry::UDS_NAME, "."_L1);
-    uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, i18n("Snapshots for %1", subvolumePath));
-    uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_TYPE, i18n("Snapshots"));
+    uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME,
+                   i18nc("@title denoting a listing of snapshots for a directory; %1 is the path to the directory", "Snapshots for %1", subvolumePath));
+    uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_TYPE, i18nc("denoting that this directory shows a listing of snapshot", "Snapshots"));
     uds.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s);
     uds.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR);
     uds.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s);

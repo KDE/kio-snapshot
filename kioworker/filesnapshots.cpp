@@ -97,7 +97,7 @@ KIO::WorkerResult FileSnapshotsProtocol::listDir(const QUrl &url)
         entry.replace(KIO::UDSEntry::UDS_NAME, "%1-%2"_L1.arg(entry.stringValue(KIO::UDSEntry::UDS_NAME), QString::number(snapshot.subvolumeId)));
         entry.replace(KIO::UDSEntry::UDS_ACCESS, S_IRUSR);
         if (snapshot.path == url.path()) {
-            dateRepr = i18n("Current");
+            dateRepr = i18nc("denoting the present / most-recent version of the file", "Current");
         } else {
             dateRepr = fmt.formatRelativeDateTime(snapshot.snapshotted, QLocale::LongFormat);
         }
