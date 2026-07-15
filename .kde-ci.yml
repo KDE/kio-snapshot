@@ -4,9 +4,9 @@
 Dependencies:
 - 'on': ['Linux/Qt6']
   'require':
-    'frameworks/extra-cmake-modules': '@stable'
-    'frameworks/kio': '@stable'
-    'frameworks/ki8n': '@stable'
+    'frameworks/extra-cmake-modules': '@latest-kf6'
+    'frameworks/kio': '@latest-kf6'
+    'frameworks/ki8n': '@latest-kf6'
     'third-party/libbtrfsutil': '@latest'
 
 Options:
