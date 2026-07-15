@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+SPDX-License-Identifier: CC0-1.0
+SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
+-->
+<component type="addon">
+    <id>org.kde.kio_snapshot</id>
+    <name>KIO Snapshot</name>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>LGPL-2.0-or-later</project_license>
+    <developer id="org.kde">
+        <name translate="no">KDE</name>
+    </developer>
+    <project_group>KDE</project_group>
+    <extends>org.kde.dolphin.desktop</extends>
+    <extends>org.kde.konqueror.desktop</extends>
+    <extends>org.kde.krusader.desktop</extends>
+    <extends>org.kde.gwenview.desktop</extends>
+    <summary>Filesystem snapshot integration for KDE applications</summary>
+    <description>
+        <p>KIO Snapshot enables KDE applications to view snapshot history of files and folders.</p>
+    </description>
+    <url type="homepage">https://apps.kde.org/en/kio_snapshot</url>
+    <url type="bugtracker">https://bugs.kde.org/enter_bug.cgi?format=guided&amp;product=kio-snapshot</url>
+    <screenshots>
+        <screenshot type="default">
+            <caption>Dolphin showing snapshots of a file and a folder.</caption>
+            <image type="source" width="1701" height="1023">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot.png</image>
+        </screenshot>
+    </screenshots>
+    <releases>
+        <!--<release version="1.0.0" date="2026-??-??">
+            <description>
+                <p>Initial release, tbd</p>
+            </description>
+        </release>-->
+    </releases>
+    <categories>
+        <category>System</category>
+    </categories>
+    <icon type="stock">view-history</icon>
+</component>
