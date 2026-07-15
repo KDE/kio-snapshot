@@ -11,7 +11,7 @@ target_compile_definitions(kio_snapshot PRIVATE
 )
 
 target_compile_definitions(kio_filesnapshots PRIVATE
-    TRANSLATION_DOMAIN="kio_filesnapshots"
+    TRANSLATION_DOMAIN="kio_snapshot"
 )
 
 target_sources(kio_snapshot PRIVATE

@@ -3,7 +3,7 @@ kcoreaddons_add_plugin(snapshotfileitemaction
 )
 
 target_compile_definitions(snapshotfileitemaction PRIVATE
-    TRANSLATION_DOMAIN="snapshotfileitemaction"
+    TRANSLATION_DOMAIN="kio_snapshot"
 )
 
 target_sources(snapshotfileitemaction PRIVATE
