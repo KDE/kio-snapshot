@@ -132,7 +132,7 @@ KIO::WorkerResult FileSnapshotsProtocol::stat(const QUrl &url)
     KIO::UDSEntry uds;
     uds.reserve(6);
     uds.fastInsert(KIO::UDSEntry::UDS_NAME, "file_snapshots"_L1);
-    uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, i18n("File Snapshots"));
+    uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, i18nc("@title denoting that this directory shows a listing of snapshots", "File Snapshots"));
     uds.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s);
     uds.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR);
     uds.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s);
