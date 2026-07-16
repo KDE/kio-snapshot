@@ -7,6 +7,7 @@ project(kio-snapshot VERSION 0.0.1)
 
 set(QT_MIN_VERSION 6.5.0)
 set(KF_MIN_VERSION 6.0.0)
+set(CMAKE_CXX_STANDARD 20)
 
 find_package(ECM ${KF_MIN_VERSION} REQUIRED NO_MODULE)
 
