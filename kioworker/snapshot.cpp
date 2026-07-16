@@ -140,8 +140,6 @@ KIO::WorkerResult SnapshotProtocol::listDir(const QUrl &url)
 
     KIO::UDSEntryList udsList;
     for (const auto &snapshot : snapshots) {
-        QDir snapshotDir(snapshot.path);
-
         snapshotInfoMap[snapshot.subvolumeId] = snapshot;
         QString dirName = i18nc("@title denoting a snapshot taken at a specific time; %1 is the timestamp",
                                 "Snapshot at %1",
