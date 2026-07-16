@@ -80,7 +80,7 @@ KIO::WorkerResult FileSnapshotsProtocol::listDir(const QUrl &url)
     }
 
     KIO::UDSEntryList udsList;
-    for (const BtrfsSnapshots::FileSnapshot &snapshot : snapshotsFiltered) {
+    for (const BtrfsSnapshots::FileSnapshot &snapshot : std::as_const(snapshotsFiltered)) {
         QDir snapshotDir(snapshot.path);
         QUrl targetUrl = QUrl::fromLocalFile(snapshot.path);
         QString dateRepr;

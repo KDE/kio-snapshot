@@ -136,7 +136,7 @@ KIO::WorkerResult SnapshotProtocol::listDir(const QUrl &url)
         return KIO::WorkerResult::fail(KIO::ERR_ACCESS_DENIED);
     }
 
-    QList<BtrfsSnapshots::SubvolumeSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForSubvolume(subvolumePathOpt.value());
+    const QList<BtrfsSnapshots::SubvolumeSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForSubvolume(subvolumePathOpt.value());
 
     KIO::UDSEntryList udsList;
     for (const auto &snapshot : snapshots) {
@@ -209,7 +209,7 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
             if (!snapshotPathOpt.has_value()) {
                 return KIO::WorkerResult::fail(KIO::ERR_ACCESS_DENIED);
             }
-            auto snapshotQuery = BtrfsSnapshots::getSnapshotsForSubvolume(snapshotPathOpt.value());
+            const auto snapshotQuery = BtrfsSnapshots::getSnapshotsForSubvolume(snapshotPathOpt.value());
             for (const auto &snapshot : snapshotQuery) {
                 snapshotInfoMap[snapshot.subvolumeId] = snapshot;
                 if (snapshot.subvolumeId == snapshotId) {

@@ -40,7 +40,7 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
         return actions;
     }
 
-    QUrl itemUrl = fileItemInfos.urlList().first();
+    QUrl itemUrl = fileItemInfos.urlList().constFirst();
     KFileItem item = fileItemInfos.items().findByUrl(itemUrl);
     if (itemUrl.scheme() == "snapshot"_L1) {
         return actions;
