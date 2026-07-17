@@ -12,6 +12,9 @@
 #include <KIO/JobUiDelegate>
 #include <KIO/OpenUrlJob>
 
+#include <Solid/Device>
+#include <Solid/StorageAccess>
+
 #include <KFileItem>
 #include <KLocalizedString>
 #include <KPluginFactory>
@@ -47,7 +50,14 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
     }
 
     if (item.isDir()) {
-        if (!BtrfsSnapshots::getSnapshotsForSubvolume(itemUrl.toLocalFile()).empty()) {
+        QString localPath = itemUrl.toLocalFile();
+        auto fsRoot = Solid::Device::storageAccessFromPath(localPath).as<Solid::StorageAccess>();
+        if (!fsRoot) {
+            qCCritical(SNAPSHOT_FILEITEMACTION()) << "could not determine fs root path for" << localPath;
+            return actions;
+        }
+        QString fsRootPath = fsRoot->filePath();
+        if (!BtrfsSnapshots::getSnapshotsForSubvolume(itemUrl.toLocalFile(), fsRootPath).empty()) {
             auto subvolumeIdOpt = BtrfsSnapshots::getSubvolumeForPath(itemUrl.toLocalFile());
             if (!subvolumeIdOpt.has_value()) {
                 qCCritical(SNAPSHOT_FILEITEMACTION()) << "found snapshots for dir" << itemUrl.toLocalFile() << "but it did not have a subvolume id";
@@ -62,7 +72,14 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
             actions << action;
         }
     } else if (item.isLocalFile()) {
-        if (!BtrfsSnapshots::getSnapshotsForFile(itemUrl.toLocalFile()).empty()) {
+        QString localPath = itemUrl.toLocalFile();
+        auto fsRoot = Solid::Device::storageAccessFromPath(localPath).as<Solid::StorageAccess>();
+        if (!fsRoot) {
+            qCCritical(SNAPSHOT_FILEITEMACTION()) << "could not determine fs root path for" << localPath;
+            return actions;
+        }
+        QString fsRootPath = fsRoot->filePath();
+        if (!BtrfsSnapshots::getSnapshotsForFile(itemUrl.toLocalFile(), fsRootPath).empty()) {
             QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "View snapshots…"), parentWidget);
             connect(action, &QAction::triggered, this, [this, item]() {
                 KIO::OpenUrlJob *job = new KIO::OpenUrlJob(QUrl("filesnapshots://%1"_L1.arg(item.localPath())), "inode/directory"_L1, this);

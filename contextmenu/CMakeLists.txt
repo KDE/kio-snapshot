@@ -21,4 +21,4 @@ ecm_qt_declare_logging_category(snapshotfileitemaction
     DESCRIPTION "Snapshot file item action"
 )
 
-target_link_libraries(snapshotfileitemaction KF6::KIOCore KF6::KIOWidgets KF6::I18n btrfssnapshots_lib)
+target_link_libraries(snapshotfileitemaction KF6::KIOCore KF6::KIOWidgets KF6::I18n KF6::Solid btrfssnapshots_lib)

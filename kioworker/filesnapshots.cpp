@@ -14,6 +14,9 @@
 #include <KIO/UDSEntry>
 #include <KIO/WorkerBase>
 
+#include <Solid/Device>
+#include <Solid/StorageAccess>
+
 #include <KLocalizedString>
 
 #include <QCoreApplication>
@@ -58,7 +61,15 @@ KIO::WorkerResult FileSnapshotsProtocol::listDir(const QUrl &url)
 {
     qCDebug(KIO_FILESNAPSHOTS) << "url" << url << "url.host" << url.host() << "subvolume" << url.path();
 
-    QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(url.path());
+    QString localPath = url.path();
+    auto fsRoot = Solid::Device::storageAccessFromPath(localPath).as<Solid::StorageAccess>();
+    if (!fsRoot) {
+        qCCritical(KIO_FILESNAPSHOTS) << "could not determine fs root path for" << localPath;
+        return KIO::WorkerResult::fail(KIO::ERR_DOES_NOT_EXIST);
+    }
+    QString fsRootPath = fsRoot->filePath();
+
+    QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(url.path(), fsRootPath);
 
     std::sort(snapshots.begin(), snapshots.end(), [](const BtrfsSnapshots::FileSnapshot &a, const BtrfsSnapshots::FileSnapshot &b) {
         return a.snapshotted.toSecsSinceEpoch() > b.snapshotted.toSecsSinceEpoch();
@@ -67,14 +78,15 @@ KIO::WorkerResult FileSnapshotsProtocol::listDir(const QUrl &url)
     QFileInfo currentInfo(url.path());
     BtrfsSnapshots::FileSnapshot current;
     current.path = url.path();
-    current.snapshotted = currentInfo.lastModified();
+    current.snapshotted = QDateTime::currentDateTime();
     current.modified = currentInfo.lastModified();
+    current.subvolumeId = 0;
     snapshots.insert(0, current);
 
     QList<BtrfsSnapshots::FileSnapshot> snapshotsFiltered;
     for (qsizetype i = 0; i < snapshots.size(); i++) {
         const BtrfsSnapshots::FileSnapshot &info = snapshots.at(i);
-        if (i == 0 || snapshots.at(i - 1).modified != info.modified || snapshots.at(i - 1).modified != info.modified) {
+        if (true || i == 0 || snapshots.at(i - 1).modified != info.modified || snapshots.at(i - 1).modified != info.modified) {
             snapshotsFiltered << info;
         }
     }
@@ -93,7 +105,7 @@ KIO::WorkerResult FileSnapshotsProtocol::listDir(const QUrl &url)
         } else {
             continue;
         }
-        entry.replace(KIO::UDSEntry::UDS_NAME, "%1-%2"_L1.arg(entry.stringValue(KIO::UDSEntry::UDS_NAME), QString::number(snapshot.subvolumeId)));
+        entry.replace(KIO::UDSEntry::UDS_NAME, "snapshot-%1-%2"_L1.arg(entry.stringValue(KIO::UDSEntry::UDS_NAME), QString::number(snapshot.subvolumeId)));
         entry.replace(KIO::UDSEntry::UDS_ACCESS, S_IRUSR);
         if (snapshot.path == url.path()) {
             dateRepr = i18nc("denoting the present / most-recent version of the file", "Current");

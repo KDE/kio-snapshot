@@ -12,6 +12,8 @@
 #ifndef BTRFSSNAPSHOTS_H
 #define BTRFSSNAPSHOTS_H
 
+using namespace Qt::StringLiterals;
+
 namespace BtrfsSnapshots
 {
 class FileSnapshot
@@ -31,11 +33,11 @@ public:
     QDateTime snapshotted;
 };
 
-std::optional<qulonglong> getSubvolumeForPath(const QString &path);
-std::optional<QString> getPathForSubvolume(qulonglong subvolume);
-QList<SubvolumeSnapshot> getSnapshotsForSubvolume(const QString &path);
-QList<FileSnapshot> getSnapshotsForFile(const QString &path);
-QMap<qulonglong, QString> getNonSnapshotSubvolumes();
+std::optional<qulonglong> getSubvolumeForPath(const QString &path, const QString &fsRoot = "/"_L1);
+std::optional<QString> getPathForSubvolume(qulonglong subvolume, const QString &fsRoot = "/"_L1);
+QList<SubvolumeSnapshot> getSnapshotsForSubvolume(const QString &path, const QString &fsRoot = "/"_L1);
+QList<FileSnapshot> getSnapshotsForFile(const QString &path, const QString &fsRoot = "/"_L1);
+QMap<qulonglong, QString> getNonSnapshotSubvolumes(const QString &fsRoot = "/"_L1);
 }
 
 #endif
