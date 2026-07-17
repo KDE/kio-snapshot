@@ -13,6 +13,10 @@
 #include <KIO/Global>
 #include <KIO/UDSEntry>
 
+#include <Solid/Device>
+#include <Solid/StorageAccess>
+#include <Solid/StorageVolume>
+
 #include <KLocalizedString>
 
 #include <QCoreApplication>
@@ -20,6 +24,7 @@
 #include <QDir>
 #include <QLocale>
 #include <QUrl>
+#include <QUuid>
 
 using namespace Qt::StringLiterals;
 
@@ -46,10 +51,37 @@ extern "C" int Q_DECL_EXPORT kdemain(int argc, char **argv)
 
 class SnapshotUrl : public QUrl
 {
+private:
+    bool hasUuid() const
+    {
+        QString firstSegment = path().section('/'_L1, 0, 0, QString::SectionFlag::SectionSkipEmpty);
+        return firstSegment.startsWith("uuid="_L1);
+    }
+
 public:
     SnapshotUrl(const QUrl &url)
         : QUrl(url)
     {
+    }
+
+    QString fsRoot() const
+    {
+        if (host().isEmpty()) {
+            return "/"_L1;
+        }
+        QUuid uuid(host());
+        if (!uuid.isNull()) {
+            const auto deviceList =
+                Solid::Device::listFromQuery("StorageVolume.uuid == '%1'"_L1.arg(uuid.toString(QUuid::StringFormat::WithoutBraces).toLower()));
+            if (!deviceList.isEmpty()) {
+                auto device = deviceList.first();
+                auto storageAccess = device.as<Solid::StorageAccess>();
+                if (storageAccess) {
+                    return storageAccess->filePath();
+                }
+            }
+        }
+        return "/"_L1;
     }
 
     std::optional<qulonglong> subvolumeId() const
@@ -91,7 +123,7 @@ bool SnapshotProtocol::rewriteUrl(const QUrl &url, QUrl &newUrl)
 {
     const SnapshotUrl snapshotUrl(url);
     auto snapshotId = snapshotUrl.snapshotId();
-    auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(snapshotId.value());
+    auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(snapshotId.value(), snapshotUrl.fsRoot());
     if (!snapshotPathOpt.has_value()) {
         warning(i18nc("@info warning", "Could not open snapshot"));
         return false;
@@ -109,17 +141,21 @@ KIO::WorkerResult SnapshotProtocol::listDir(const QUrl &url)
     qCDebug(KIO_SNAPSHOT) << "url" << url << "url.host" << url.host() << "subvolume" << snapshotUrl.subvolumeId() << "snapshotId" << snapshotUrl.snapshotId()
                           << "actualPath" << snapshotUrl.actualPath();
 
+    const QString fsRoot = snapshotUrl.fsRoot();
+
     if (!snapshotUrl.subvolumeId().has_value()) {
         KIO::UDSEntryList udsList;
-        for (const auto [id, path] : BtrfsSnapshots::getNonSnapshotSubvolumes().asKeyValueRange()) {
-            if (!BtrfsSnapshots::getSnapshotsForSubvolume(path).empty()) {
+        for (const auto [id, path] : BtrfsSnapshots::getNonSnapshotSubvolumes(fsRoot).asKeyValueRange()) {
+            if (!BtrfsSnapshots::getSnapshotsForSubvolume(path, fsRoot).empty()) {
                 KIO::UDSEntry entry;
                 entry.fastInsert(KIO::UDSEntry::UDS_NAME, "subvolume%1"_L1.arg(QString::number(id)));
                 entry.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME,
                                  i18nc("@title denoting a listing of snapshots for a directory; %1 is the path to the directory", "Snapshots for %1", path));
                 entry.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, "view-history"_L1);
                 entry.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, QT_STAT_DIR);
-                entry.fastInsert(KIO::UDSEntry::UDS_URL, "snapshot:///%1"_L1.arg(QString::number(id)));
+                QUrl targetUrl = url;
+                targetUrl.setPath("/"_L1 + QString::number(id));
+                entry.fastInsert(KIO::UDSEntry::UDS_URL, targetUrl.toString(QUrl::FullyEncoded));
                 udsList << entry;
             }
         }
@@ -131,12 +167,12 @@ KIO::WorkerResult SnapshotProtocol::listDir(const QUrl &url)
         return KIO::ForwardingWorkerBase::listDir(url);
     }
 
-    auto subvolumePathOpt = BtrfsSnapshots::getPathForSubvolume(snapshotUrl.subvolumeId().value());
+    auto subvolumePathOpt = BtrfsSnapshots::getPathForSubvolume(snapshotUrl.subvolumeId().value(), fsRoot);
     if (!subvolumePathOpt.has_value()) {
         return KIO::WorkerResult::fail(KIO::ERR_ACCESS_DENIED);
     }
 
-    const QList<BtrfsSnapshots::SubvolumeSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForSubvolume(subvolumePathOpt.value());
+    const QList<BtrfsSnapshots::SubvolumeSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForSubvolume(subvolumePathOpt.value(), fsRoot);
 
     KIO::UDSEntryList udsList;
     for (const auto &snapshot : snapshots) {
@@ -152,8 +188,7 @@ KIO::WorkerResult SnapshotProtocol::listDir(const QUrl &url)
         entry.fastInsert(KIO::UDSEntry::UDS_CREATION_TIME, snapshot.snapshotted.toSecsSinceEpoch());
         entry.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, QT_STAT_DIR);
         entry.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, "inode/directory"_L1);
-        QUrl targetUrl;
-        targetUrl.setScheme("snapshot"_L1);
+        QUrl targetUrl = url;
         targetUrl.setPath(QDir::cleanPath("/%1/%2/"_L1.arg(QString::number(snapshotUrl.subvolumeId().value())).arg(QString::number(snapshot.subvolumeId))));
         entry.fastInsert(KIO::UDSEntry::UDS_TARGET_URL, targetUrl.toString(QUrl::FullyEncoded));
         qCDebug(KIO_SNAPSHOT) << entry;
@@ -190,6 +225,7 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
     }
 
     qulonglong subvolumeId = snapshotUrl.subvolumeId().value();
+    const QString fsRoot = snapshotUrl.fsRoot();
 
     if (snapshotUrl.snapshotId().has_value() && !snapshotUrl.actualPath().isEmpty()) {
         qCDebug(KIO_SNAPSHOT()) << "forwarding stat...";
@@ -203,11 +239,11 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
         if (snapshotInfoMap.contains(snapshotId)) {
             snapshotInfo = snapshotInfoMap[snapshotId];
         } else {
-            auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(subvolumeId);
+            auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(subvolumeId, fsRoot);
             if (!snapshotPathOpt.has_value()) {
                 return KIO::WorkerResult::fail(KIO::ERR_ACCESS_DENIED);
             }
-            const auto snapshotQuery = BtrfsSnapshots::getSnapshotsForSubvolume(snapshotPathOpt.value());
+            const auto snapshotQuery = BtrfsSnapshots::getSnapshotsForSubvolume(snapshotPathOpt.value(), fsRoot);
             for (const auto &snapshot : snapshotQuery) {
                 snapshotInfoMap[snapshot.subvolumeId] = snapshot;
                 if (snapshot.subvolumeId == snapshotId) {
@@ -234,7 +270,7 @@ KIO::WorkerResult SnapshotProtocol::stat(const QUrl &url)
         return KIO::WorkerResult::pass();
     }
 
-    auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(subvolumeId);
+    auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(subvolumeId, fsRoot);
     if (!snapshotPathOpt.has_value()) {
         return KIO::WorkerResult::fail(KIO::ERR_ACCESS_DENIED);
     }

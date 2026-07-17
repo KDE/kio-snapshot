@@ -14,6 +14,7 @@
 
 #include <Solid/Device>
 #include <Solid/StorageAccess>
+#include <Solid/StorageVolume>
 
 #include <KFileItem>
 #include <KLocalizedString>
@@ -51,22 +52,36 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
 
     if (item.isDir()) {
         QString localPath = itemUrl.toLocalFile();
-        auto fsRoot = Solid::Device::storageAccessFromPath(localPath).as<Solid::StorageAccess>();
-        if (!fsRoot) {
+        auto fsDevice = Solid::Device::storageAccessFromPath(localPath);
+        auto fsAccess = fsDevice.as<Solid::StorageAccess>();
+        if (!fsAccess) {
             qCCritical(SNAPSHOT_FILEITEMACTION()) << "could not determine fs root path for" << localPath;
             return actions;
         }
-        QString fsRootPath = fsRoot->filePath();
+        QString fsRootPath = fsAccess->filePath();
+        auto fsVolume = fsDevice.as<Solid::StorageVolume>();
+        if (!fsVolume) {
+            qCCritical(SNAPSHOT_FILEITEMACTION()) << "could not determine fs storage volume for" << localPath;
+            return actions;
+        }
+        QString fsUuid = fsVolume->uuid();
+
         if (!BtrfsSnapshots::getSnapshotsForSubvolume(itemUrl.toLocalFile(), fsRootPath).empty()) {
-            auto subvolumeIdOpt = BtrfsSnapshots::getSubvolumeForPath(itemUrl.toLocalFile());
+            auto subvolumeIdOpt = BtrfsSnapshots::getSubvolumeForPath(itemUrl.toLocalFile(), fsRootPath);
             if (!subvolumeIdOpt.has_value()) {
                 qCCritical(SNAPSHOT_FILEITEMACTION()) << "found snapshots for dir" << itemUrl.toLocalFile() << "but it did not have a subvolume id";
                 return actions;
             }
             auto subvolumeId = subvolumeIdOpt.value();
             QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "Browse snapshots…"), parentWidget);
-            connect(action, &QAction::triggered, this, [this, subvolumeId]() {
-                KIO::OpenUrlJob *job = new KIO::OpenUrlJob(QUrl("snapshot:///%1"_L1.arg(QString::number(subvolumeId))), "inode/directory"_L1, this);
+            connect(action, &QAction::triggered, this, [this, subvolumeId, fsRootPath, fsUuid]() {
+                QUrl targetUrl;
+                targetUrl.setScheme("snapshot"_L1);
+                if (fsRootPath != "/"_L1) {
+                    targetUrl.setHost(fsUuid);
+                }
+                targetUrl.setPath("/"_L1 + QString::number(subvolumeId));
+                KIO::OpenUrlJob *job = new KIO::OpenUrlJob(targetUrl, "inode/directory"_L1, this);
                 job->start();
             });
             actions << action;
