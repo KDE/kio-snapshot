@@ -3,10 +3,20 @@
 
     SPDX-License-Identifier: LGPL-2.0-or-later
 */
-
 #include "btrfssnapshots.h"
 
 #include <btrfsutil.h>
+
+#define BTRFS_UTIL_VERSION ( \
+(BTRFS_UTIL_VERSION_MAJOR * 10000) + \
+(BTRFS_UTIL_VERSION_MINOR * 100) + \
+(BTRFS_UTIL_VERSION_PATCH))
+
+#if BTRFS_UTIL_VERSION < 10302
+    #define btrfs_util_subvolume_get_info btrfs_util_subvolume_info
+    #define btrfs_util_subvolume_iter_next_info btrfs_util_subvolume_iterator_next_info
+    #define btrfs_util_subvolume_iter_create btrfs_util_create_subvolume_iterator
+#endif
 
 #include <QDir>
 #include <QFileInfo>
