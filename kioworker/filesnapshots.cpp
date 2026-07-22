@@ -86,7 +86,7 @@ KIO::WorkerResult FileSnapshotsProtocol::listDir(const QUrl &url)
     QList<BtrfsSnapshots::FileSnapshot> snapshotsFiltered;
     for (qsizetype i = 0; i < snapshots.size(); i++) {
         const BtrfsSnapshots::FileSnapshot &info = snapshots.at(i);
-        if (true || i == 0 || snapshots.at(i - 1).modified != info.modified || snapshots.at(i - 1).modified != info.modified) {
+        if (currentInfo.isDir() || i == 0 || snapshots.at(i - 1).modified != info.modified || snapshots.at(i - 1).modified != info.modified) {
             snapshotsFiltered << info;
         }
     }
