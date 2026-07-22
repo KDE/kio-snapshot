@@ -82,7 +82,7 @@ QList<BtrfsSnapshots::FileSnapshot> BtrfsSnapshots::getSnapshotsForFile(const QS
     if (fileInfo.isDir()) {
         subvolumeRoot = QDir(path);
     } else {
-        QDir subvolumeRoot(QFileInfo(path).absoluteDir());
+        subvolumeRoot = QDir(QFileInfo(path).absoluteDir());
     }
     struct btrfs_util_subvolume_info subvolume_root_info;
     enum btrfs_util_error btrfs_err;
