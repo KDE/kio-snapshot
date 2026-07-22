@@ -25,17 +25,14 @@
 
 using namespace Qt::StringLiterals;
 
-const char *cstr(const QString &s)
-{
-    return s.toLocal8Bit().constData();
-}
+#define CSTR(s) (s.toLocal8Bit().constData())
 
 std::optional<qulonglong> BtrfsSnapshots::getSubvolumeForPath(const QString &path, const QString &fsRoot)
 {
     enum btrfs_util_error btrfs_err;
 
     struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(cstr(fsRoot), 0, 0, &iter);
+    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
     if (btrfs_err != 0) {
         return std::nullopt;
     }
@@ -58,7 +55,7 @@ std::optional<QString> BtrfsSnapshots::getPathForSubvolume(qulonglong subvolume,
     enum btrfs_util_error btrfs_err;
 
     struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(cstr(fsRoot), 0, 0, &iter);
+    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
     if (btrfs_err != 0) {
         return std::nullopt;
     }
@@ -89,7 +86,7 @@ QList<BtrfsSnapshots::FileSnapshot> BtrfsSnapshots::getSnapshotsForFile(const QS
     }
     struct btrfs_util_subvolume_info subvolume_root_info;
     enum btrfs_util_error btrfs_err;
-    while (!subvolumeRoot.isRoot() && (btrfs_err = btrfs_util_subvolume_get_info(cstr(subvolumeRoot.absolutePath()), 0, &subvolume_root_info)) != 0) {
+    while (!subvolumeRoot.isRoot() && (btrfs_err = btrfs_util_subvolume_get_info(CSTR(subvolumeRoot.absolutePath()), 0, &subvolume_root_info)) != 0) {
         subvolumeRoot.cdUp();
     }
 
@@ -100,7 +97,7 @@ QList<BtrfsSnapshots::FileSnapshot> BtrfsSnapshots::getSnapshotsForFile(const QS
     QString pathRel = subvolumeRoot.relativeFilePath(path);
 
     struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(cstr(fsRoot), 0, 0, &iter);
+    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
     if (btrfs_err != 0) {
         return fileSnapshots;
     }
@@ -134,13 +131,13 @@ QList<BtrfsSnapshots::SubvolumeSnapshot> BtrfsSnapshots::getSnapshotsForSubvolum
     struct btrfs_util_subvolume_info info;
     enum btrfs_util_error btrfs_err;
 
-    btrfs_err = btrfs_util_subvolume_get_info(cstr(path), 0, &info);
+    btrfs_err = btrfs_util_subvolume_get_info(CSTR(path), 0, &info);
     if (btrfs_err != 0) {
         return subvolSnapshots;
     }
 
     struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(cstr(fsRoot), 0, 0, &iter);
+    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
     if (btrfs_err != 0) {
         return subvolSnapshots;
     }
@@ -168,7 +165,7 @@ QMap<qulonglong, QString> BtrfsSnapshots::getNonSnapshotSubvolumes(const QString
     enum btrfs_util_error btrfs_err;
 
     struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(cstr(fsRoot), 0, 0, &iter);
+    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
     if (btrfs_err != 0) {
         return subvolumes;
     }
