@@ -27,6 +27,7 @@ include(FeatureSummary)
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
     Core
+    Test
 )
 
 find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
@@ -59,3 +60,6 @@ add_subdirectory(kioworker)
 add_subdirectory(contextmenu)
 
 install(FILES org.kde.kio_snapshot.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
+
+include(CTest)
+add_subdirectory(autotests)
