@@ -33,6 +33,7 @@ build_tests_kdelinux:
   rules:
     - !reference [.default_rules, rules]
   tags:
+    - VM
     - amd64
   image: storage.kde.org/vm-images/kde-linux-builder
   script: ./ci_build_test.sh
