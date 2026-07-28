@@ -5,7 +5,7 @@
 
 set -eux
 
-sudo pacman --sync --refresh --noconfirm btrfs-progs kio solid ki18n cmake base-devel
+sudo pacman --sync --refresh --noconfirm btrfs-progs kio solid ki18n cmake base-devel extra-cmake-modules ninja
 mkdir build
 cmake -B build -S . -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
