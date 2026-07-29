@@ -43,3 +43,6 @@ build_tests_kdelinux:
     access: all
     paths:
       - build/**/*-report.xml
+    reports:
+      junit:
+        - build/**/*-report.xml
