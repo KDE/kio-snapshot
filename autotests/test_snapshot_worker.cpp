@@ -69,6 +69,23 @@ private Q_SLOTS:
         QVERIFY(listJob->exec());
     };
 
+    void testRoot()
+    {
+        QUrl url;
+        url.setScheme("snapshot"_L1);
+        url.setHost(m_fsUuid);
+        url.setPath("/5"_L1);
+        KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
+        connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotRootSnapshotEntries);
+        bool ok = listJob->exec();
+        if (!ok) {
+            qDebug() << url;
+            qDebug() << listJob->errorText();
+            qDebug() << listJob->errorString();
+        }
+        QVERIFY(ok);
+    }
+
 protected Q_SLOTS:
     void slotAllSubvolumesEntries(KIO::Job *, const KIO::UDSEntryList &entries)
     {
@@ -76,22 +93,23 @@ protected Q_SLOTS:
         bool hasSub = false;
         for (const KIO::UDSEntry &entry : std::as_const(entries)) {
             qDebug() << entry;
-            const auto name = entry.stringValue(KIO::UDSEntry::UDS_DISPLAY_NAME);
-            if (name.contains(QDir::cleanPath(m_testMount + "/sub"_L1))) {
+            const auto displayName = entry.stringValue(KIO::UDSEntry::UDS_DISPLAY_NAME);
+            const auto name = entry.stringValue(KIO::UDSEntry::UDS_NAME);
+            if (displayName.contains(QDir::cleanPath(m_testMount + "/sub"_L1))) {
                 hasSub = true;
+            }
+            if (name == "subvolume5"_L1) {
+                hasRoot = true;
             }
         }
         QVERIFY(hasSub);
-        QEXPECT_FAIL("", "TODO get BtrfsSnapshots::getNonSnapshotSubvolumes to return root volume", Continue);
         QVERIFY(hasRoot);
-        QEXPECT_FAIL("", "TODO get BtrfsSnapshots::getNonSnapshotSubvolumes to return root volume", Continue);
         QCOMPARE(entries.size(), 2);
     }
 
     void slotGetSubSnapshotsUrl(KIO::Job *, const KIO::UDSEntryList &entries)
     {
         for (const KIO::UDSEntry &entry : std::as_const(entries)) {
-            qDebug() << "aaa" << entry;
             const auto name = entry.stringValue(KIO::UDSEntry::UDS_DISPLAY_NAME);
             if (name.contains(QDir::cleanPath(m_testMount + "/sub"_L1))) {
                 m_subSnapshotsUrl = QUrl(entry.stringValue(KIO::UDSEntry::UDS_URL));
@@ -105,6 +123,11 @@ protected Q_SLOTS:
     }
 
     void slotSubSnapshotEntries(KIO::Job *, const KIO::UDSEntryList &entries)
+    {
+        QCOMPARE(entries.size(), 6);
+    }
+
+    void slotRootSnapshotEntries(KIO::Job *, const KIO::UDSEntryList &entries)
     {
         QCOMPARE(entries.size(), 6);
     }

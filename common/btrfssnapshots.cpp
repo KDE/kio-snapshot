@@ -47,6 +47,11 @@ std::optional<qulonglong> BtrfsSnapshots::getSubvolumeForPath(const QString &pat
         free(iter_path);
     }
 
+    if (path == fsRoot) {
+        // we did not find a subvolume mounted at fs root, so fs root must be volume 5 (FS_TREE)
+        return 5;
+    }
+
     return std::nullopt;
 }
 
@@ -69,6 +74,11 @@ std::optional<QString> BtrfsSnapshots::getPathForSubvolume(qulonglong subvolume,
             return path;
         }
         free(iter_path);
+    }
+
+    if (subvolume == 5 && getSubvolumeForPath(fsRoot, fsRoot) == 5) {
+        // 5 is the FS_TREE volume
+        return fsRoot;
     }
 
     return std::nullopt;
@@ -178,6 +188,13 @@ QMap<qulonglong, QString> BtrfsSnapshots::getNonSnapshotSubvolumes(const QString
         }
         free(iter_path);
     }
+
+    struct btrfs_util_subvolume_info root_info;
+    btrfs_err = btrfs_util_subvolume_get_info(CSTR(fsRoot), 0, &root_info);
+    if (btrfs_err != 0) {
+        return subvolumes;
+    }
+    subvolumes[static_cast<qulonglong>(root_info.id)] = fsRoot;
 
     return subvolumes;
 }
