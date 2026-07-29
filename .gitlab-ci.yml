@@ -39,3 +39,7 @@ build_tests_kdelinux:
   script: ./ci_build_test.sh
   artifacts:
     untracked: false
+    when: always
+    access: all
+    paths:
+      - build/**/*-report.xml
