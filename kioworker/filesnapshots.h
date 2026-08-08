@@ -10,6 +10,11 @@
 #include <KFormat>
 #include <KIO/WorkerBase>
 
+namespace BtrfsSnapshots
+{
+class FileSnapshot;
+}
+
 class FileSnapshotsProtocol : public QObject, public KIO::WorkerBase
 {
     Q_OBJECT
@@ -23,6 +28,8 @@ public:
 
 private:
     KFormat fmt;
+    std::optional<KIO::UDSEntry> statForSnapshot(const BtrfsSnapshots::FileSnapshot &snapshot);
+    std::optional<BtrfsSnapshots::FileSnapshot> snapshotForWorkerUrl(const QUrl &workerUrl);
 };
 
 #endif
