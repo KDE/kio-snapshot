@@ -36,6 +36,7 @@ public:
 std::optional<qulonglong> getSubvolumeForPath(const QString &path, const QString &fsRoot = "/"_L1);
 std::optional<QString> getPathForSubvolume(qulonglong subvolume, const QString &fsRoot = "/"_L1);
 QList<SubvolumeSnapshot> getSnapshotsForSubvolume(const QString &path, const QString &fsRoot = "/"_L1);
+bool hasSnapshots(const QString &path, const QString &fsRoot);
 QList<FileSnapshot> getSnapshotsForFile(const QString &path, const QString &fsRoot = "/"_L1);
 QMap<qulonglong, QString> getNonSnapshotSubvolumes(const QString &fsRoot = "/"_L1);
 }
