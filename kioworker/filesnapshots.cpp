@@ -221,8 +221,12 @@ KIO::WorkerResult FileSnapshotsProtocol::stat(const QUrl &url)
         KIO::UDSEntry uds;
         uds.reserve(6);
         uds.fastInsert(KIO::UDSEntry::UDS_NAME, url.fileName());
-        uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME,
-                       i18nc("@title denoting that this directory shows a listing of snapshots for the path %1", "Snapshots for %1", url.path()));
+        if (QFileInfo(url.path()).isDir()) {
+            uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, url.fileName());
+        } else {
+            uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME,
+                           i18nc("@title denoting that this directory shows a listing of snapshots for the path %1", "Snapshots for %1", url.fileName()));
+        }
         uds.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s);
         uds.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR);
         uds.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s);
