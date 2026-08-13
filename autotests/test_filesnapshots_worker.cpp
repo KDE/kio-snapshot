@@ -32,8 +32,8 @@ private Q_SLOTS:
     void testRootFile()
     {
         QUrl url;
-        url.setScheme("filesnapshots"_L1);
-        url.setPath(QDir::cleanPath(m_testMount + "/file.txt"_L1));
+        url.setScheme("snapshot"_L1);
+        url.setPath(QDir::cleanPath("/file/"_L1 + m_testMount + "/file.txt"_L1));
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestFileSnapshotsWorker::slotRootFileEntries);
         QVERIFY(listJob->exec());
@@ -42,8 +42,8 @@ private Q_SLOTS:
     void testSubvolumeFile()
     {
         QUrl url;
-        url.setScheme("filesnapshots"_L1);
-        url.setPath(QDir::cleanPath(m_testMount + "/sub/vol.txt"_L1));
+        url.setScheme("snapshot"_L1);
+        url.setPath(QDir::cleanPath("/file/"_L1 + m_testMount + "/sub/vol.txt"_L1));
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestFileSnapshotsWorker::slotSubvolumeFileEntries);
         QVERIFY(listJob->exec());

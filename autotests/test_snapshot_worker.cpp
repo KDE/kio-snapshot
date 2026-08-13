@@ -25,7 +25,6 @@ class TestSnapshotWorker : public QObject
 private:
     QString m_testMount;
     QString m_fsUuid;
-    QUrl m_subSnapshotsUrl;
 
 private Q_SLOTS:
     void initTestCase()
@@ -54,6 +53,7 @@ private Q_SLOTS:
         QUrl url;
         url.setScheme("snapshot"_L1);
         url.setHost(m_fsUuid);
+        url.setPath("/subvolume"_L1);
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotAllSubvolumesEntries);
         QVERIFY(listJob->exec());
@@ -64,8 +64,9 @@ private Q_SLOTS:
         QUrl url;
         url.setScheme("snapshot"_L1);
         url.setHost(m_fsUuid);
+        url.setPath("/subvolume"_L1);
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
-        connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotGetSubSnapshotsUrl);
+        connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotGetSubvolumeId);
         QVERIFY(listJob->exec());
     };
 
@@ -74,7 +75,7 @@ private Q_SLOTS:
         QUrl url;
         url.setScheme("snapshot"_L1);
         url.setHost(m_fsUuid);
-        url.setPath("/5"_L1);
+        url.setPath("/subvolume/5"_L1);
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotRootSnapshotEntries);
         bool ok = listJob->exec();
@@ -98,7 +99,7 @@ protected Q_SLOTS:
             if (displayName.contains(QDir::cleanPath(m_testMount + "/sub"_L1))) {
                 hasSub = true;
             }
-            if (name == "subvolume5"_L1) {
+            if (name == "5"_L1) {
                 hasRoot = true;
             }
         }
@@ -107,28 +108,36 @@ protected Q_SLOTS:
         QCOMPARE(entries.size(), 2);
     }
 
-    void slotGetSubSnapshotsUrl(KIO::Job *, const KIO::UDSEntryList &entries)
+    void slotGetSubvolumeId(KIO::Job *, const KIO::UDSEntryList &entries)
     {
+        qulonglong subvolumeId;
         for (const KIO::UDSEntry &entry : std::as_const(entries)) {
             const auto name = entry.stringValue(KIO::UDSEntry::UDS_DISPLAY_NAME);
             if (name.contains(QDir::cleanPath(m_testMount + "/sub"_L1))) {
-                m_subSnapshotsUrl = QUrl(entry.stringValue(KIO::UDSEntry::UDS_URL));
-                qDebug() << m_subSnapshotsUrl;
+                subvolumeId = entry.stringValue(KIO::UDSEntry::UDS_NAME).toULongLong();
+                qDebug() << "subvolume ID" << subvolumeId;
             }
         }
 
-        KIO::ListJob *subListJob = KIO::listDir(m_subSnapshotsUrl, KIO::HideProgressInfo);
+        QUrl subSnapshotsUrl;
+        subSnapshotsUrl.setScheme("snapshot"_L1);
+        subSnapshotsUrl.setHost(m_fsUuid);
+        subSnapshotsUrl.setPath("/subvolume/%1"_L1.arg(QString::number(subvolumeId)));
+        qDebug() << subSnapshotsUrl;
+        KIO::ListJob *subListJob = KIO::listDir(subSnapshotsUrl, KIO::HideProgressInfo);
         connect(subListJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotSubSnapshotEntries);
         QVERIFY(subListJob->exec());
     }
 
     void slotSubSnapshotEntries(KIO::Job *, const KIO::UDSEntryList &entries)
     {
+        qDebug() << entries;
         QCOMPARE(entries.size(), 6);
     }
 
     void slotRootSnapshotEntries(KIO::Job *, const KIO::UDSEntryList &entries)
     {
+        qDebug() << entries;
         QCOMPARE(entries.size(), 6);
     }
 };

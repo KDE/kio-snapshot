@@ -22,6 +22,7 @@
 
 #include <QAction>
 #include <QDBusMetaType>
+#include <QDir>
 #include <QIcon>
 #include <QList>
 #include <QMenu>
@@ -80,7 +81,7 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
                 if (fsRootPath != "/"_L1) {
                     targetUrl.setHost(fsUuid);
                 }
-                targetUrl.setPath("/"_L1 + QString::number(subvolumeId));
+                targetUrl.setPath("/subvolume/"_L1 + QString::number(subvolumeId));
                 KIO::OpenUrlJob *job = new KIO::OpenUrlJob(targetUrl, "inode/directory"_L1, this);
                 job->start();
             });
@@ -97,7 +98,10 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
         if (BtrfsSnapshots::hasSnapshots(itemUrl.toLocalFile(), fsRootPath)) {
             QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "View snapshots…"), parentWidget);
             connect(action, &QAction::triggered, this, [this, item]() {
-                KIO::OpenUrlJob *job = new KIO::OpenUrlJob(QUrl("filesnapshots://%1"_L1.arg(item.localPath())), "inode/directory"_L1, this);
+                QUrl targetUrl;
+                targetUrl.setScheme("snapshot"_L1);
+                targetUrl.setPath(QDir::cleanPath("/file/"_L1 + item.localPath()));
+                KIO::OpenUrlJob *job = new KIO::OpenUrlJob(targetUrl, "inode/directory"_L1, this);
                 job->start();
             });
             actions << action;

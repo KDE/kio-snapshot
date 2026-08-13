@@ -7,8 +7,12 @@
 #ifndef SNAPSHOT_H
 #define SNAPSHOT_H
 
+#include "snapshoturl.h"
+
 #include <KIO/ForwardingWorkerBase>
 #include <KIO/WorkerBase>
+
+#include <QUrl>
 
 namespace BtrfsSnapshots
 {
@@ -31,6 +35,12 @@ protected:
 
 private:
     QHash<qulonglong, BtrfsSnapshots::SubvolumeSnapshot> snapshotInfoMap;
+    KIO::WorkerResult listDirForSubvolume(const SnapshotUrl &url);
+    KIO::WorkerResult statForSubvolume(const SnapshotUrl &url);
+    KIO::WorkerResult mimetypeForSubvolume(const SnapshotUrl &url);
+    KIO::WorkerResult listDirForFile(const SnapshotUrl &url);
+    KIO::WorkerResult statForFile(const SnapshotUrl &url);
+    KIO::WorkerResult mimetypeForFile(const SnapshotUrl &url);
 };
 
 #endif

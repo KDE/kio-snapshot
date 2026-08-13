@@ -5,26 +5,15 @@ kcoreaddons_add_plugin(kio_snapshot
     INSTALL_NAMESPACE kf6/kio
 )
 
-kcoreaddons_add_plugin(kio_filesnapshots
-    INSTALL_NAMESPACE kf6/kio
-)
-
 target_compile_definitions(kio_snapshot PRIVATE
-    TRANSLATION_DOMAIN="kio_snapshot"
-)
-
-target_compile_definitions(kio_filesnapshots PRIVATE
     TRANSLATION_DOMAIN="kio_snapshot"
 )
 
 target_sources(kio_snapshot PRIVATE
     snapshot.cpp
-    ${service_dbus_src}
-)
-
-target_sources(kio_filesnapshots PRIVATE
     filesnapshots.cpp
-    ${service_dbus_src}
+    snapshoturl.cpp
+    subvolumesnapshots.cpp
 )
 
 ecm_qt_declare_logging_category(kio_snapshot
@@ -35,13 +24,4 @@ ecm_qt_declare_logging_category(kio_snapshot
     EXPORT KIO
 )
 
-ecm_qt_declare_logging_category(kio_filesnapshots
-    HEADER filesnapshots_debug.h
-    IDENTIFIER KIO_FILESNAPSHOTS
-    CATEGORY_NAME kf.kio.workers.filesnapshots
-    DESCRIPTION "kio_filesnapshots (KIO)"
-    EXPORT KIO
-)
-
 target_link_libraries(kio_snapshot KF6::KIOCore KF6::I18n KF6::Solid btrfssnapshots_lib)
-target_link_libraries(kio_filesnapshots KF6::KIOCore KF6::I18n KF6::Solid btrfssnapshots_lib)

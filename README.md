@@ -4,7 +4,7 @@ Integration of Btrfs filesystem snapshots for KDE apps.
 
 Includes:
 
-  - [KIO workers](./kioworker) for browsing snapshots of a subvolume, and for browsing previous versions of a file
+  - a [KIO worker](./kioworker) for browsing snapshots of a subvolume, and for browsing previous versions of a file
   - a [KFileItemActions plugin (context menu)](./contextmenu) for exposing these as menu items in Dolphin etc.
 
 ## A note for users of Snapper

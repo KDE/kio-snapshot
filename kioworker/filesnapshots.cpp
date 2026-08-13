@@ -4,8 +4,8 @@
     SPDX-License-Identifier: LGPL-2.0-or-later
 */
 
-#include "filesnapshots.h"
-#include "filesnapshots_debug.h"
+#include "snapshot.h"
+#include "snapshot_debug.h"
 
 #include <btrfssnapshots.h>
 
@@ -18,6 +18,7 @@
 #include <Solid/Device>
 #include <Solid/StorageAccess>
 
+#include <KFormat>
 #include <KLocalizedString>
 
 #include <QCoreApplication>
@@ -26,59 +27,94 @@
 #include <QLocale>
 #include <QUrl>
 
-using namespace Qt::StringLiterals;
-
-class KIOPluginForMetaData : public QObject
+std::optional<KIO::UDSEntry> statForSnapshot(const BtrfsSnapshots::FileSnapshot &snapshot)
 {
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.kde.kio.worker.filesnapshots" FILE "filesnapshots.json")
-};
-
-extern "C" int Q_DECL_EXPORT kdemain(int argc, char **argv)
-{
-    // necessary to use other kio workers
-    QCoreApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("kio_filesnapshots"));
-    if (argc != 4) {
-        fprintf(stderr, "Usage: kio_filesnapshots protocol domain-socket1 domain-socket2\n");
-        exit(-1);
+    QUrl targetUrl = QUrl::fromLocalFile(snapshot.path);
+    QString dateRepr;
+    KIO::UDSEntry entry;
+    KIO::StatJob *job = KIO::stat(targetUrl, KIO::HideProgressInfo);
+    job->setDetails(KIO::StatDefaultDetails | KIO::StatSubVolId);
+    QScopedPointer<KIO::StatJob> sp(job);
+    sp->setAutoDelete(false);
+    if (sp->exec()) {
+        entry = sp->statResult();
+    } else {
+        return std::nullopt;
     }
-    // start the worker
-    FileSnapshotsProtocol worker(argv[2], argv[3]);
-    worker.dispatchLoop();
-    return 0;
+    entry.replace(KIO::UDSEntry::UDS_NAME, "snapshot-%1-%2"_L1.arg(entry.stringValue(KIO::UDSEntry::UDS_NAME), QString::number(snapshot.subvolumeId)));
+    entry.replace(KIO::UDSEntry::UDS_ACCESS, S_IRUSR);
+    if (snapshot.subvolumeId == 0) {
+        dateRepr = i18nc("denoting the present / most-recent version of the file", "Current");
+    } else {
+        dateRepr = KFormat().formatRelativeDateTime(snapshot.snapshotted, QLocale::LongFormat);
+    }
+    entry.replace(KIO::UDSEntry::UDS_CREATION_TIME, snapshot.snapshotted.toSecsSinceEpoch());
+    entry.replace(KIO::UDSEntry::UDS_MODIFICATION_TIME, snapshot.modified.toSecsSinceEpoch());
+    entry.replace(KIO::UDSEntry::UDS_DISPLAY_NAME, dateRepr);
+    entry.replace(KIO::UDSEntry::UDS_LOCAL_PATH, snapshot.path);
+    entry.replace(KIO::UDSEntry::UDS_TARGET_URL, targetUrl.toString(QUrl::FullyEncoded));
+
+    return entry;
 }
 
-FileSnapshotsProtocol::FileSnapshotsProtocol(const QByteArray &pool, const QByteArray &app)
-    : WorkerBase("filesnapshots", pool, app)
+std::optional<BtrfsSnapshots::FileSnapshot> snapshotForWorkerUrl(const SnapshotUrl &workerUrl)
 {
+    if (workerUrl.fileName().startsWith("snapshot-"_L1) && !QFileInfo::exists(workerUrl.actualPath())) {
+        bool gotSubvolId = false;
+        qulonglong subvolId = workerUrl.fileName().section('-'_L1, -1).toULongLong(&gotSubvolId);
+        if (!gotSubvolId) {
+            return std::nullopt;
+        }
+
+        QUrl localUrl = QUrl::fromLocalFile(workerUrl.actualPath()).adjusted(QUrl::RemoveFilename | QUrl::StripTrailingSlash);
+
+        if (subvolId == 0) {
+            QFileInfo currentInfo(localUrl.path());
+            BtrfsSnapshots::FileSnapshot current;
+            current.path = localUrl.path();
+            current.snapshotted = QDateTime::currentDateTime();
+            current.modified = currentInfo.lastModified();
+            current.subvolumeId = 0;
+            return current;
+        } else {
+            auto fsRoot = Solid::Device::storageAccessFromPath(localUrl.path()).as<Solid::StorageAccess>();
+            if (!fsRoot) {
+                qCCritical(KIO_SNAPSHOT) << "could not determine fs root path for" << localUrl;
+                return std::nullopt;
+            }
+            QString fsRootPath = fsRoot->filePath();
+
+            const QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(localUrl.path(), fsRootPath);
+            for (const auto &snapshot : snapshots) {
+                if (snapshot.subvolumeId == subvolId) {
+                    return snapshot;
+                }
+            }
+        }
+    }
+
+    return std::nullopt;
 }
 
-FileSnapshotsProtocol::~FileSnapshotsProtocol()
+KIO::WorkerResult SnapshotProtocol::listDirForFile(const SnapshotUrl &url)
 {
-}
-
-KIO::WorkerResult FileSnapshotsProtocol::listDir(const QUrl &url)
-{
-    qCDebug(KIO_FILESNAPSHOTS) << "url" << url << "url.host" << url.host() << "subvolume" << url.path();
-
-    QString localPath = url.path();
+    QString localPath = url.actualPath();
     auto fsRoot = Solid::Device::storageAccessFromPath(localPath).as<Solid::StorageAccess>();
     if (!fsRoot) {
-        qCCritical(KIO_FILESNAPSHOTS) << "could not determine fs root path for" << localPath;
+        qCCritical(KIO_SNAPSHOT) << "could not determine fs root path for" << localPath;
         return KIO::WorkerResult::fail(KIO::ERR_DOES_NOT_EXIST);
     }
     QString fsRootPath = fsRoot->filePath();
 
-    QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(url.path(), fsRootPath);
+    QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(url.actualPath(), fsRootPath);
 
     std::sort(snapshots.begin(), snapshots.end(), [](const BtrfsSnapshots::FileSnapshot &a, const BtrfsSnapshots::FileSnapshot &b) {
         return a.snapshotted.toSecsSinceEpoch() > b.snapshotted.toSecsSinceEpoch();
     });
 
-    QFileInfo currentInfo(url.path());
+    QFileInfo currentInfo(url.actualPath());
     BtrfsSnapshots::FileSnapshot current;
-    current.path = url.path();
+    current.path = url.actualPath();
     current.snapshotted = QDateTime::currentDateTime();
     current.modified = currentInfo.lastModified();
     current.subvolumeId = 0;
@@ -104,78 +140,9 @@ KIO::WorkerResult FileSnapshotsProtocol::listDir(const QUrl &url)
     return KIO::WorkerResult::pass();
 }
 
-std::optional<KIO::UDSEntry> FileSnapshotsProtocol::statForSnapshot(const BtrfsSnapshots::FileSnapshot &snapshot)
+KIO::WorkerResult SnapshotProtocol::mimetypeForFile(const SnapshotUrl &url)
 {
-    QUrl targetUrl = QUrl::fromLocalFile(snapshot.path);
-    QString dateRepr;
-    KIO::UDSEntry entry;
-    KIO::StatJob *job = KIO::stat(targetUrl, KIO::HideProgressInfo);
-    job->setDetails(KIO::StatDefaultDetails | KIO::StatSubVolId);
-    QScopedPointer<KIO::StatJob> sp(job);
-    sp->setAutoDelete(false);
-    if (sp->exec()) {
-        entry = sp->statResult();
-    } else {
-        return std::nullopt;
-    }
-    entry.replace(KIO::UDSEntry::UDS_NAME, "snapshot-%1-%2"_L1.arg(entry.stringValue(KIO::UDSEntry::UDS_NAME), QString::number(snapshot.subvolumeId)));
-    entry.replace(KIO::UDSEntry::UDS_ACCESS, S_IRUSR);
-    if (snapshot.subvolumeId == 0) {
-        dateRepr = i18nc("denoting the present / most-recent version of the file", "Current");
-    } else {
-        dateRepr = fmt.formatRelativeDateTime(snapshot.snapshotted, QLocale::LongFormat);
-    }
-    entry.replace(KIO::UDSEntry::UDS_CREATION_TIME, snapshot.snapshotted.toSecsSinceEpoch());
-    entry.replace(KIO::UDSEntry::UDS_MODIFICATION_TIME, snapshot.modified.toSecsSinceEpoch());
-    entry.replace(KIO::UDSEntry::UDS_DISPLAY_NAME, dateRepr);
-    entry.replace(KIO::UDSEntry::UDS_LOCAL_PATH, snapshot.path);
-    entry.replace(KIO::UDSEntry::UDS_TARGET_URL, targetUrl.toString(QUrl::FullyEncoded));
-
-    return entry;
-}
-
-std::optional<BtrfsSnapshots::FileSnapshot> FileSnapshotsProtocol::snapshotForWorkerUrl(const QUrl &workerUrl)
-{
-    if (workerUrl.fileName().startsWith("snapshot-"_L1) && !QFileInfo::exists(workerUrl.path())) {
-        bool gotSubvolId = false;
-        qulonglong subvolId = workerUrl.fileName().section('-'_L1, -1).toULongLong(&gotSubvolId);
-        if (!gotSubvolId) {
-            return std::nullopt;
-        }
-
-        QUrl localUrl = workerUrl.adjusted(QUrl::RemoveFilename | QUrl::StripTrailingSlash);
-
-        if (subvolId == 0) {
-            QFileInfo currentInfo(localUrl.path());
-            BtrfsSnapshots::FileSnapshot current;
-            current.path = localUrl.path();
-            current.snapshotted = QDateTime::currentDateTime();
-            current.modified = currentInfo.lastModified();
-            current.subvolumeId = 0;
-            return current;
-        } else {
-            auto fsRoot = Solid::Device::storageAccessFromPath(localUrl.path()).as<Solid::StorageAccess>();
-            if (!fsRoot) {
-                qCCritical(KIO_FILESNAPSHOTS) << "could not determine fs root path for" << localUrl;
-                return std::nullopt;
-            }
-            QString fsRootPath = fsRoot->filePath();
-
-            const QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(localUrl.path(), fsRootPath);
-            for (const auto &snapshot : snapshots) {
-                if (snapshot.subvolumeId == subvolId) {
-                    return snapshot;
-                }
-            }
-        }
-    }
-
-    return std::nullopt;
-}
-
-KIO::WorkerResult FileSnapshotsProtocol::mimetype(const QUrl &url)
-{
-    if (url.fileName().startsWith("snapshot-"_L1) && !QFileInfo::exists(url.path())) {
+    if (url.fileName().startsWith("snapshot-"_L1) && !QFileInfo::exists(url.actualPath())) {
         const auto snapshot = snapshotForWorkerUrl(url);
 
         if (!snapshot.has_value()) {
@@ -197,12 +164,12 @@ KIO::WorkerResult FileSnapshotsProtocol::mimetype(const QUrl &url)
     return KIO::WorkerResult::pass();
 }
 
-KIO::WorkerResult FileSnapshotsProtocol::stat(const QUrl &url)
+KIO::WorkerResult SnapshotProtocol::statForFile(const SnapshotUrl &url)
 {
-    qCDebug(KIO_FILESNAPSHOTS) << "stat" << url;
-    qCDebug(KIO_FILESNAPSHOTS) << url.fileName();
+    qCDebug(KIO_SNAPSHOT) << "stat" << url;
+    qCDebug(KIO_SNAPSHOT) << url.fileName();
 
-    if (url.fileName().startsWith("snapshot-"_L1) && !QFileInfo::exists(url.path())) {
+    if (url.fileName().startsWith("snapshot-"_L1) && !QFileInfo::exists(url.actualPath())) {
         const auto snapshot = snapshotForWorkerUrl(url);
         if (!snapshot.has_value()) {
             return KIO::WorkerResult::fail(KIO::ERR_DOES_NOT_EXIST);
@@ -217,11 +184,11 @@ KIO::WorkerResult FileSnapshotsProtocol::stat(const QUrl &url)
         return KIO::WorkerResult::fail(KIO::ERR_DOES_NOT_EXIST);
     }
 
-    if (!url.path().isEmpty()) {
+    if (!url.actualPath().isEmpty()) {
         KIO::UDSEntry uds;
         uds.reserve(6);
         uds.fastInsert(KIO::UDSEntry::UDS_NAME, url.fileName());
-        if (QFileInfo(url.path()).isDir()) {
+        if (QFileInfo(url.actualPath()).isDir()) {
             uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, url.fileName());
         } else {
             uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME,
@@ -247,5 +214,3 @@ KIO::WorkerResult FileSnapshotsProtocol::stat(const QUrl &url)
 
     return KIO::WorkerResult::pass();
 }
-
-#include "filesnapshots.moc"
