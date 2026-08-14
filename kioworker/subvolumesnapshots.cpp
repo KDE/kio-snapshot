@@ -28,9 +28,6 @@
 
 KIO::WorkerResult SnapshotProtocol::listDirForSubvolume(const SnapshotUrl &url)
 {
-    qCDebug(KIO_SNAPSHOT) << "url" << url << "url.host" << url.host() << "subvolume" << url.subvolumeId() << "snapshotId" << url.snapshotId() << "actualPath"
-                          << url.actualPath();
-
     const QString fsRoot = url.fsRoot();
 
     if (!url.subvolumeId().has_value()) {
@@ -78,10 +75,6 @@ KIO::WorkerResult SnapshotProtocol::listDirForSubvolume(const SnapshotUrl &url)
         entry.fastInsert(KIO::UDSEntry::UDS_CREATION_TIME, snapshot.snapshotted.toSecsSinceEpoch());
         entry.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, QT_STAT_DIR);
         entry.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, "inode/directory"_L1);
-        // QUrl targetUrl = url;
-        // targetUrl.setPath(QDir::cleanPath("/%1/%2/"_L1.arg(QString::number(url.subvolumeId().value())).arg(QString::number(snapshot.subvolumeId))));
-        // entry.fastInsert(KIO::UDSEntry::UDS_TARGET_URL, targetUrl.toString(QUrl::FullyEncoded));
-        qCDebug(KIO_SNAPSHOT) << entry;
         udsList << entry;
     }
     listEntries(udsList);
@@ -111,12 +104,11 @@ KIO::WorkerResult SnapshotProtocol::statForSubvolume(const SnapshotUrl &url)
     qulonglong subvolumeId = url.subvolumeId().value();
     const QString fsRoot = url.fsRoot();
 
-    if (url.snapshotId().has_value() && !url.actualPath().isEmpty()) {
-        qCDebug(KIO_SNAPSHOT()) << "forwarding stat...";
+    if (url.snapshotId().has_value() && url.actualPath() != "/"_L1) {
         return KIO::ForwardingWorkerBase::stat(url);
     }
 
-    if (url.snapshotId().has_value() && url.actualPath().isEmpty()) {
+    if (url.snapshotId().has_value() && url.actualPath() == "/"_L1) {
         qulonglong snapshotId = url.snapshotId().value();
 
         BtrfsSnapshots::SubvolumeSnapshot snapshotInfo;
