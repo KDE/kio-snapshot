@@ -36,6 +36,9 @@ sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-after-additions
 rm butter-tray/sub/vol.txt
 sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-after-removal
 echo "again" > butter-tray/sub/vol.txt
+sudo btrfs filesystem sync butter-tray
+sudo btrfs filesystem sync butter-tray/sub
+sleep 1
 sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-after-recreation
 
 sudo btrfs filesystem sync butter-tray
