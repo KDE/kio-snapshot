@@ -6,7 +6,7 @@ Dependencies:
   'require':
     'frameworks/extra-cmake-modules': '@latest-kf6'
     'frameworks/kio': '@latest-kf6'
-    'frameworks/ki8n': '@latest-kf6'
+    'frameworks/ki18n': '@latest-kf6'
     'third-party/libbtrfsutil': '@latest'
 
 Options:
