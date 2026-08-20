@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-project(kio-snapshot VERSION 0.0.1)
+project(kio-snapshot VERSION 1.0.0)
 
 set(QT_MIN_VERSION 6.8.0)
 set(KF_MIN_VERSION 6.23.0)
