@@ -38,6 +38,7 @@ find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libbtrfsutil REQUIRED IMPORTED_TARGET libbtrfsutil)
+pkg_check_modules(MOUNT REQUIRED mount IMPORTED_TARGET mount)
 
 ecm_set_disabled_deprecation_versions(
     QT 6.7
@@ -53,7 +54,7 @@ kde_configure_git_pre_commit_hook(CHECKS CLANG_FORMAT)
 
 add_library(btrfssnapshots_lib STATIC common/btrfssnapshots.cpp)
 set_target_properties(btrfssnapshots_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(btrfssnapshots_lib Qt::Core PkgConfig::libbtrfsutil)
+target_link_libraries(btrfssnapshots_lib Qt::Core PkgConfig::libbtrfsutil KF6::Solid PkgConfig::MOUNT)
 target_include_directories(btrfssnapshots_lib PUBLIC common/)
 
 add_subdirectory(kioworker)
