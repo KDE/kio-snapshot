@@ -69,19 +69,19 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
 
         if (BtrfsSnapshots::hasSnapshots(itemUrl.toLocalFile(), fsRootPath)) {
             auto subvolumeIdOpt = BtrfsSnapshots::getSubvolumeForPath(itemUrl.toLocalFile(), fsRootPath);
-            if (!subvolumeIdOpt.has_value()) {
-                qCCritical(SNAPSHOT_FILEITEMACTION()) << "found snapshots for dir" << itemUrl.toLocalFile() << "but it did not have a subvolume id";
-                return actions;
-            }
-            auto subvolumeId = subvolumeIdOpt.value();
             QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "Browse snapshots…"), parentWidget);
-            connect(action, &QAction::triggered, this, [this, subvolumeId, fsRootPath, fsUuid]() {
+            connect(action, &QAction::triggered, this, [this, subvolumeIdOpt, fsRootPath, fsUuid, item]() {
                 QUrl targetUrl;
-                targetUrl.setScheme("snapshot"_L1);
-                if (fsRootPath != "/"_L1) {
-                    targetUrl.setHost(fsUuid);
+                if (subvolumeIdOpt.has_value()) {
+                    targetUrl.setScheme("snapshot"_L1);
+                    if (fsRootPath != "/"_L1) {
+                        targetUrl.setHost(fsUuid);
+                    }
+                    targetUrl.setPath("/subvolume/"_L1 + QString::number(subvolumeIdOpt.value()));
+                } else {
+                    targetUrl.setScheme("snapshot"_L1);
+                    targetUrl.setPath(QDir::cleanPath("/file/"_L1 + item.localPath()));
                 }
-                targetUrl.setPath("/subvolume/"_L1 + QString::number(subvolumeId));
                 KIO::OpenUrlJob *job = new KIO::OpenUrlJob(targetUrl, "inode/directory"_L1, this);
                 job->start();
             });
