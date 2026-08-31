@@ -50,9 +50,10 @@ std::optional<QString> getDeviceForRoot(const QString &fsRoot)
     return fsBlock->device();
 }
 
-QHash<qulonglong, QString> getBtrfsSubvolMounts(const QString &fsRoot)
+QList<QString> getBtrfsSubvolMounts(const QString &fsRoot)
 {
-    QHash<qulonglong, QString> subvolMounts;
+    QList<QString> subvolMounts;
+    subvolMounts << fsRoot;
 
     auto deviceOpt = getDeviceForRoot(fsRoot);
     if (!deviceOpt.has_value()) {
@@ -97,18 +98,9 @@ QHash<qulonglong, QString> getBtrfsSubvolMounts(const QString &fsRoot)
 
             if (srcStr == devicePath) {
                 const char *target = mnt_fs_get_target(fs);
-
-                qulonglong subvol = 5;
-
-                char *val = nullptr;
-                size_t sz = 0;
-                const char *options = mnt_fs_get_fs_options(fs);
-
-                if (options && mnt_optstr_get_option(options, "subvolid", &val, &sz) == 0 && val) {
-                    subvol = QString::fromUtf8(val, sz).toULongLong();
-                    if (target) {
-                        subvolMounts.insert(subvol, QString::fromUtf8(target));
-                    }
+                const QString targetStr = QString::fromUtf8(target);
+                if (targetStr != fsRoot) {
+                    subvolMounts << targetStr;
                 }
             }
         }
@@ -117,6 +109,9 @@ QHash<qulonglong, QString> getBtrfsSubvolMounts(const QString &fsRoot)
     mnt_free_iter(itr);
     mnt_unref_table(tb);
 
+    std::sort(subvolMounts.begin(), subvolMounts.end(), [](const QString &a, const QString &b) {
+        return a.length() < b.length();
+    });
     return subvolMounts;
 }
 
@@ -124,61 +119,15 @@ std::optional<qulonglong> BtrfsSnapshots::getSubvolumeForPath(const QString &pat
 {
     enum btrfs_util_error btrfs_err;
 
-    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
-
-    struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
-    if (btrfs_err != 0) {
+    struct btrfs_util_subvolume_info info;
+    btrfs_err = btrfs_util_subvolume_get_info(CSTR(path), 0, &info);
+    if (btrfs_err == 0) {
+        return info.id;
+    } else if (path == fsRoot) {
+        return 5;
+    } else {
         return std::nullopt;
     }
-
-    struct btrfs_util_subvolume_info iter_info;
-    char *iter_path;
-    while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-        const qulonglong subvol = static_cast<qulonglong>(iter_info.id);
-        if (subvolMounts.contains(subvol)) {
-            if (QDir::cleanPath(path) == QDir::cleanPath(subvolMounts.value(subvol))) {
-                return subvol;
-            }
-        }
-        if (QDir::cleanPath(path) == QDir::cleanPath(fsRoot + "/"_L1 + QString::fromUtf8(iter_path))) {
-            free(iter_path);
-            return subvol;
-        }
-        free(iter_path);
-    }
-
-    if (path == fsRoot) {
-        // we did not find a subvolume mounted at fs root, so fs root must be volume 5 (FS_TREE)
-        return 5;
-    }
-
-    for (const auto &[subvol, subvolPath] : subvolMounts.asKeyValueRange()) {
-        if (QDir::cleanPath(path) == QDir::cleanPath(subvolPath)) {
-            return subvol;
-        }
-    }
-
-    if (subvolMounts.contains(5)) {
-        const auto &fsTreeMount = subvolMounts.value(5);
-        struct btrfs_util_subvolume_iterator *iter;
-        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsTreeMount), 0, 0, &iter);
-        if (btrfs_err != 0) {
-            return std::nullopt;
-        }
-
-        struct btrfs_util_subvolume_info iter_info;
-        char *iter_path;
-        while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-            if (QDir::cleanPath(path) == QDir::cleanPath(fsTreeMount + "/"_L1 + QString::fromUtf8(iter_path))) {
-                free(iter_path);
-                return iter_info.id;
-            }
-            free(iter_path);
-        }
-    }
-
-    return std::nullopt;
 }
 
 std::optional<QString> BtrfsSnapshots::getPathForSubvolume(qulonglong subvolume, const QString &fsRoot)
@@ -186,50 +135,34 @@ std::optional<QString> BtrfsSnapshots::getPathForSubvolume(qulonglong subvolume,
     enum btrfs_util_error btrfs_err;
 
     const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
-    if (subvolMounts.contains(subvolume)) {
-        return subvolMounts.value(subvolume);
-    }
 
-    struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
-    if (btrfs_err != 0) {
-        return std::nullopt;
-    }
-
-    struct btrfs_util_subvolume_info iter_info;
-    char *iter_path;
-    while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-        if (subvolume == static_cast<qulonglong>(iter_info.id)) {
-            QString path = QDir::cleanPath(fsRoot + "/"_L1 + QString::fromUtf8(iter_path));
-            free(iter_path);
-            return path;
+    for (const auto &mountPoint : subvolMounts) {
+        struct btrfs_util_subvolume_info info;
+        btrfs_err = btrfs_util_subvolume_get_info(CSTR(mountPoint), 0, &info);
+        if (btrfs_err == 0 && info.id == subvolume) {
+            return mountPoint;
         }
-        free(iter_path);
-    }
 
-    if (subvolume == 5 && getSubvolumeForPath(fsRoot, fsRoot) == 5) {
-        // 5 is the FS_TREE volume
-        return fsRoot;
-    }
-
-    if (subvolMounts.contains(5)) {
-        const auto &fsTreeMount = subvolMounts.value(5);
         struct btrfs_util_subvolume_iterator *iter;
-        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsTreeMount), 0, 0, &iter);
+        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(mountPoint), 0, 0, &iter);
         if (btrfs_err != 0) {
-            return std::nullopt;
+            continue;
         }
 
         struct btrfs_util_subvolume_info iter_info;
         char *iter_path;
         while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
             if (subvolume == static_cast<qulonglong>(iter_info.id)) {
-                QString path = QDir::cleanPath(fsTreeMount + "/"_L1 + QString::fromUtf8(iter_path));
+                QString path = QDir::cleanPath(mountPoint + "/"_L1 + QString::fromUtf8(iter_path));
                 free(iter_path);
                 return path;
             }
             free(iter_path);
         }
+    }
+
+    if (getSubvolumeForPath(fsRoot, fsRoot) == subvolume) {
+        return fsRoot;
     }
 
     return std::nullopt;
@@ -259,39 +192,28 @@ bool BtrfsSnapshots::hasSnapshots(const QString &path, const QString &fsRoot)
         return false;
     }
 
-    struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
-    if (btrfs_err != 0) {
-        return false;
-    }
+    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
 
-    struct btrfs_util_subvolume_info iter_info;
-    char *iter_path;
-    while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-        if (QByteArrayView::fromArray(iter_info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)) {
-            free(iter_path);
+    for (const auto &mountPoint : subvolMounts) {
+        struct btrfs_util_subvolume_info info;
+        btrfs_err = btrfs_util_subvolume_get_info(CSTR(mountPoint), 0, &info);
+        if (btrfs_err == 0 && QByteArrayView::fromArray(info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)) {
             return true;
         }
-        free(iter_path);
-    }
 
-    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
-    if (subvolMounts.contains(5)) {
-        const auto &fsTreeMount = subvolMounts.value(5);
         struct btrfs_util_subvolume_iterator *iter;
-        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsTreeMount), 0, 0, &iter);
+        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(mountPoint), 0, 0, &iter);
         if (btrfs_err != 0) {
-            return false;
+            continue;
         }
 
         struct btrfs_util_subvolume_info iter_info;
         char *iter_path;
         while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
+            free(iter_path);
             if (QByteArrayView::fromArray(iter_info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)) {
-                free(iter_path);
                 return true;
             }
-            free(iter_path);
         }
     }
 
@@ -326,61 +248,42 @@ QList<BtrfsSnapshots::FileSnapshot> BtrfsSnapshots::getSnapshotsForFile(const QS
 
     QString pathRel = subvolumeRoot.relativeFilePath(path);
 
-    struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
-    if (btrfs_err != 0) {
-        return fileSnapshots;
-    }
-
-    struct btrfs_util_subvolume_info iter_info;
-    char *iter_path;
-    QSet<qulonglong> foundSnapshots;
-    while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-        if (QByteArrayView::fromArray(iter_info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)) {
-            QString snapshotSubvolPath = QDir::cleanPath(fsRoot + "/"_L1 + QString::fromUtf8(iter_path));
-            QString filePath = QDir(snapshotSubvolPath).absoluteFilePath(pathRel);
-            QFileInfo file(filePath);
-            if (file.exists() && file.isReadable()) {
-                FileSnapshot snapshotInfo;
-                snapshotInfo.path = QDir(snapshotSubvolPath).absoluteFilePath(pathRel);
-                snapshotInfo.snapshotted = QDateTime::fromMSecsSinceEpoch(iter_info.otime.tv_sec * 1000 + iter_info.otime.tv_nsec / 1000000);
-                snapshotInfo.modified = file.lastModified();
-                snapshotInfo.subvolumeId = static_cast<qulonglong>(iter_info.id);
-                foundSnapshots.insert(static_cast<qulonglong>(iter_info.id));
-                fileSnapshots << snapshotInfo;
-            }
-        }
-        free(iter_path);
-    }
-
     const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
-    if (subvolMounts.contains(5)) {
-        const auto &fsTreeMount = subvolMounts.value(5);
+    QMap<qulonglong, QPair<QString, struct btrfs_util_subvolume_info>> foundSnapshots;
+    for (const auto &mountPoint : subvolMounts) {
+        struct btrfs_util_subvolume_info info;
+        btrfs_err = btrfs_util_subvolume_get_info(CSTR(mountPoint), 0, &info);
+        if (btrfs_err == 0 && QByteArrayView::fromArray(info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)) {
+            foundSnapshots.insert(info.id, {mountPoint, info});
+        }
+
         struct btrfs_util_subvolume_iterator *iter;
-        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsTreeMount), 0, 0, &iter);
+        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(mountPoint), 0, 0, &iter);
         if (btrfs_err != 0) {
-            return fileSnapshots;
+            continue;
         }
 
         struct btrfs_util_subvolume_info iter_info;
         char *iter_path;
         while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-            if (!foundSnapshots.contains(static_cast<qulonglong>(iter_info.id))
-                && QByteArrayView::fromArray(iter_info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)) {
-                QString snapshotSubvolPath = QDir::cleanPath(fsTreeMount + "/"_L1 + QString::fromUtf8(iter_path));
-                QString filePath = QDir(snapshotSubvolPath).absoluteFilePath(pathRel);
-                QFileInfo file(filePath);
-                if (file.exists() && file.isReadable()) {
-                    FileSnapshot snapshotInfo;
-                    snapshotInfo.path = QDir(snapshotSubvolPath).absoluteFilePath(pathRel);
-                    snapshotInfo.snapshotted = QDateTime::fromMSecsSinceEpoch(iter_info.otime.tv_sec * 1000 + iter_info.otime.tv_nsec / 1000000);
-                    snapshotInfo.modified = file.lastModified();
-                    snapshotInfo.subvolumeId = static_cast<qulonglong>(iter_info.id);
-                    foundSnapshots.insert(static_cast<qulonglong>(iter_info.id));
-                    fileSnapshots << snapshotInfo;
-                }
+            if (QByteArrayView::fromArray(iter_info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)
+                && !foundSnapshots.contains(iter_info.id)) {
+                foundSnapshots.insert(iter_info.id, {QDir::cleanPath(mountPoint + "/"_L1 + QString::fromUtf8(iter_path)), iter_info});
             }
             free(iter_path);
+        }
+    }
+
+    for (const auto &[path, info] : std::as_const(foundSnapshots)) {
+        QString filePath = QDir(path).absoluteFilePath(pathRel);
+        QFileInfo file(filePath);
+        if (file.exists() && file.isReadable()) {
+            FileSnapshot snapshotInfo;
+            snapshotInfo.path = filePath;
+            snapshotInfo.snapshotted = QDateTime::fromMSecsSinceEpoch(info.otime.tv_sec * 1000 + info.otime.tv_nsec / 1000000);
+            snapshotInfo.modified = file.lastModified();
+            snapshotInfo.subvolumeId = info.id;
+            fileSnapshots << snapshotInfo;
         }
     }
 
@@ -391,57 +294,46 @@ QList<BtrfsSnapshots::SubvolumeSnapshot> BtrfsSnapshots::getSnapshotsForSubvolum
 {
     QList<SubvolumeSnapshot> subvolSnapshots;
 
-    struct btrfs_util_subvolume_info info;
+    struct btrfs_util_subvolume_info subvolume_root_info;
     enum btrfs_util_error btrfs_err;
 
-    btrfs_err = btrfs_util_subvolume_get_info(CSTR(path), 0, &info);
+    btrfs_err = btrfs_util_subvolume_get_info(CSTR(path), 0, &subvolume_root_info);
     if (btrfs_err != 0) {
         return subvolSnapshots;
-    }
-
-    struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
-    if (btrfs_err != 0) {
-        return subvolSnapshots;
-    }
-
-    struct btrfs_util_subvolume_info iter_info;
-    char *iter_path;
-    QSet<qulonglong> foundSnapshots;
-    while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-        if (QByteArrayView::fromArray(iter_info.parent_uuid) == QByteArrayView::fromArray(info.uuid)) {
-            SubvolumeSnapshot snapshotInfo;
-            snapshotInfo.path = QDir::cleanPath(fsRoot + "/"_L1 + QString::fromUtf8(iter_path));
-            snapshotInfo.subvolumeId = static_cast<qulonglong>(iter_info.id);
-            snapshotInfo.snapshotted = QDateTime::fromMSecsSinceEpoch(iter_info.otime.tv_sec * 1000 + iter_info.otime.tv_nsec / 1000000);
-            foundSnapshots.insert(static_cast<qulonglong>(iter_info.id));
-            subvolSnapshots << snapshotInfo;
-        }
-        free(iter_path);
     }
 
     const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
-    if (subvolMounts.contains(5)) {
-        const auto &fsTreeMount = subvolMounts.value(5);
+    QMap<qulonglong, QPair<QString, struct btrfs_util_subvolume_info>> foundSnapshots;
+    for (const auto &mountPoint : subvolMounts) {
+        struct btrfs_util_subvolume_info info;
+        btrfs_err = btrfs_util_subvolume_get_info(CSTR(mountPoint), 0, &info);
+        if (btrfs_err == 0 && QByteArrayView::fromArray(info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)) {
+            foundSnapshots.insert(info.id, {mountPoint, info});
+        }
+
         struct btrfs_util_subvolume_iterator *iter;
-        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsTreeMount), 0, 0, &iter);
+        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(mountPoint), 0, 0, &iter);
         if (btrfs_err != 0) {
-            return subvolSnapshots;
+            continue;
         }
 
         struct btrfs_util_subvolume_info iter_info;
         char *iter_path;
         while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-            if (!foundSnapshots.contains(static_cast<qulonglong>(iter_info.id))
-                && QByteArrayView::fromArray(iter_info.parent_uuid) == QByteArrayView::fromArray(info.uuid)) {
-                SubvolumeSnapshot snapshotInfo;
-                snapshotInfo.path = QDir::cleanPath(fsTreeMount + "/"_L1 + QString::fromUtf8(iter_path));
-                snapshotInfo.subvolumeId = static_cast<qulonglong>(iter_info.id);
-                snapshotInfo.snapshotted = QDateTime::fromMSecsSinceEpoch(iter_info.otime.tv_sec * 1000 + iter_info.otime.tv_nsec / 1000000);
-                subvolSnapshots << snapshotInfo;
+            if (QByteArrayView::fromArray(iter_info.parent_uuid) == QByteArrayView::fromArray(subvolume_root_info.uuid)
+                && !foundSnapshots.contains(iter_info.id)) {
+                foundSnapshots.insert(iter_info.id, {QDir::cleanPath(mountPoint + "/"_L1 + QString::fromUtf8(iter_path)), iter_info});
             }
             free(iter_path);
         }
+    }
+
+    for (const auto &[path, info] : std::as_const(foundSnapshots)) {
+        SubvolumeSnapshot snapshotInfo;
+        snapshotInfo.path = path;
+        snapshotInfo.subvolumeId = info.id;
+        snapshotInfo.snapshotted = QDateTime::fromMSecsSinceEpoch(info.otime.tv_sec * 1000 + info.otime.tv_nsec / 1000000);
+        subvolSnapshots << snapshotInfo;
     }
 
     return subvolSnapshots;
@@ -453,27 +345,29 @@ QMap<qulonglong, QString> BtrfsSnapshots::getNonSnapshotSubvolumes(const QString
 
     enum btrfs_util_error btrfs_err;
 
-    struct btrfs_util_subvolume_iterator *iter;
-    btrfs_err = btrfs_util_subvolume_iter_create(CSTR(fsRoot), 0, 0, &iter);
-    if (btrfs_err != 0) {
-        return subvolumes;
-    }
-
-    struct btrfs_util_subvolume_info iter_info;
-    char *iter_path;
-    while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
-        if (QUuid::fromBytes(iter_info.parent_uuid).isNull()) {
-            subvolumes[static_cast<qulonglong>(iter_info.id)] = QDir::cleanPath(fsRoot + "/"_L1 + QString::fromUtf8(iter_path));
+    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
+    for (const auto &mountPoint : subvolMounts) {
+        struct btrfs_util_subvolume_info info;
+        btrfs_err = btrfs_util_subvolume_get_info(CSTR(mountPoint), 0, &info);
+        if (btrfs_err == 0) {
+            subvolumes[info.id] = mountPoint;
         }
-        free(iter_path);
-    }
 
-    struct btrfs_util_subvolume_info root_info;
-    btrfs_err = btrfs_util_subvolume_get_info(CSTR(fsRoot), 0, &root_info);
-    if (btrfs_err != 0) {
-        return subvolumes;
+        struct btrfs_util_subvolume_iterator *iter;
+        btrfs_err = btrfs_util_subvolume_iter_create(CSTR(mountPoint), 0, 0, &iter);
+        if (btrfs_err != 0) {
+            continue;
+        }
+
+        struct btrfs_util_subvolume_info iter_info;
+        char *iter_path;
+        while ((btrfs_err = btrfs_util_subvolume_iter_next_info(iter, &iter_path, &iter_info)) == 0) {
+            if (QUuid::fromBytes(iter_info.parent_uuid).isNull() && !subvolumes.contains(iter_info.id)) {
+                subvolumes[iter_info.id] = QDir::cleanPath(mountPoint + "/"_L1 + QString::fromUtf8(iter_path));
+            }
+            free(iter_path);
+        }
     }
-    subvolumes[static_cast<qulonglong>(root_info.id)] = fsRoot;
 
     return subvolumes;
 }

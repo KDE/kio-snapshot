@@ -25,6 +25,8 @@ class TestSnapshotWorker : public QObject
 private:
     QString m_testMount;
     QString m_fsUuid;
+    QString m_testComplexMount;
+    QString m_complexFsUuid;
 
 private Q_SLOTS:
     void initTestCase()
@@ -46,6 +48,26 @@ private Q_SLOTS:
         }
         qDebug() << fsVolume->uuid();
         m_fsUuid = fsVolume->uuid();
+        QCOMPARE_NE(m_fsUuid, ""_L1);
+
+        m_testComplexMount = QString::fromUtf8(qgetenv("KIO_SNAPSHOT_TEST_COMPLEX_MOUNTPOINT"));
+        if (m_testComplexMount.isEmpty() || !QDir(m_testComplexMount).exists()) {
+            QFAIL("Could not access mountpoint for test Btrfs filesystem (check env var KIO_SNAPSHOT_TEST_COMPLEX_MOUNTPOINT)");
+        }
+        fsDevice = Solid::Device::storageAccessFromPath(m_testComplexMount);
+        fsAccess = fsDevice.as<Solid::StorageAccess>();
+        if (!fsAccess) {
+            QFAIL("could not determine fs root path");
+        }
+        qDebug() << fsAccess->filePath();
+        fsRootPath = fsAccess->filePath();
+        fsVolume = fsDevice.as<Solid::StorageVolume>();
+        if (!fsVolume) {
+            QFAIL("could not determine fs storage volume for");
+        }
+        qDebug() << fsVolume->uuid();
+        m_complexFsUuid = fsVolume->uuid();
+        QCOMPARE_NE(m_complexFsUuid, ""_L1);
     };
 
     void testListAllSubvolumes()
@@ -78,6 +100,23 @@ private Q_SLOTS:
         url.setPath("/subvolume/5"_L1);
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotRootSnapshotEntries);
+        bool ok = listJob->exec();
+        if (!ok) {
+            qDebug() << url;
+            qDebug() << listJob->errorText();
+            qDebug() << listJob->errorString();
+        }
+        QVERIFY(ok);
+    }
+
+    void testComplex()
+    {
+        QUrl url;
+        url.setScheme("snapshot"_L1);
+        url.setHost(m_complexFsUuid);
+        url.setPath("/subvolume/256"_L1);
+        KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
+        connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotComplexSnapshotEntries);
         bool ok = listJob->exec();
         if (!ok) {
             qDebug() << url;
@@ -139,6 +178,12 @@ protected Q_SLOTS:
     {
         qDebug() << entries;
         QCOMPARE(entries.size(), 6);
+    }
+
+    void slotComplexSnapshotEntries(KIO::Job *, const KIO::UDSEntryList &entries)
+    {
+        qDebug() << entries;
+        QCOMPARE(entries.size(), 2);
     }
 };
 

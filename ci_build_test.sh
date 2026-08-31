@@ -6,13 +6,14 @@
 set -eux
 
 sudo pacman --sync --refresh --noconfirm btrfs-progs kio solid ki18n cmake base-devel extra-cmake-modules ninja
-mkdir build
-cmake -B build -S . -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
 mkdir fstmp
 cd fstmp
 bash ../autotests/prep_btrfs.sh
 cd ..
+mkdir build
+cmake -B build -S . -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
 export KIO_SNAPSHOT_TEST_MOUNTPOINT="$PWD/fstmp/butter-tray"
-export QT_LOGGING_RULES="default.debug=true"
+export KIO_SNAPSHOT_TEST_COMPLEX_MOUNTPOINT="$PWD/fstmp/butter2-sub2-tray"
+export QT_LOGGING_RULES="default.debug=true;*snapshot*=true"
 cmake --build build --target test

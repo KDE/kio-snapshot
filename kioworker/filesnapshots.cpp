@@ -109,7 +109,7 @@ KIO::WorkerResult SnapshotProtocol::listDirForFile(const SnapshotUrl &url)
     QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(url.actualPath(), fsRootPath);
 
     std::sort(snapshots.begin(), snapshots.end(), [](const BtrfsSnapshots::FileSnapshot &a, const BtrfsSnapshots::FileSnapshot &b) {
-        return a.snapshotted.toSecsSinceEpoch() > b.snapshotted.toSecsSinceEpoch();
+        return a.snapshotted.toMSecsSinceEpoch() > b.snapshotted.toMSecsSinceEpoch();
     });
 
     QFileInfo currentInfo(url.actualPath());
@@ -123,7 +123,7 @@ KIO::WorkerResult SnapshotProtocol::listDirForFile(const SnapshotUrl &url)
     QList<BtrfsSnapshots::FileSnapshot> snapshotsFiltered;
     for (qsizetype i = 0; i < snapshots.size(); i++) {
         const BtrfsSnapshots::FileSnapshot &info = snapshots.at(i);
-        if (currentInfo.isDir() || i == 0 || snapshots.at(i - 1).modified != info.modified || snapshots.at(i - 1).modified != info.modified) {
+        if (currentInfo.isDir() || i == 0 || i == snapshots.size() - 1 || snapshots.at(i + 1).modified != info.modified) {
             snapshotsFiltered << info;
         }
     }

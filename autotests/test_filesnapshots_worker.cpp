@@ -19,6 +19,7 @@ class TestFileSnapshotsWorker : public QObject
 
 private:
     QString m_testMount;
+    QString m_testComplexMount;
 
 private Q_SLOTS:
     void initTestCase()
@@ -26,6 +27,11 @@ private Q_SLOTS:
         m_testMount = QString::fromUtf8(qgetenv("KIO_SNAPSHOT_TEST_MOUNTPOINT"));
         if (m_testMount.isEmpty() || !QDir(m_testMount).exists()) {
             QFAIL("Could not access mountpoint for test Btrfs filesystem (check env var KIO_SNAPSHOT_TEST_MOUNTPOINT)");
+        }
+
+        m_testComplexMount = QString::fromUtf8(qgetenv("KIO_SNAPSHOT_TEST_COMPLEX_MOUNTPOINT"));
+        if (m_testComplexMount.isEmpty() || !QDir(m_testComplexMount).exists()) {
+            QFAIL("Could not access mountpoint for test Btrfs filesystem (check env var KIO_SNAPSHOT_TEST_COMPLEX_MOUNTPOINT)");
         }
     };
 
@@ -49,6 +55,16 @@ private Q_SLOTS:
         QVERIFY(listJob->exec());
     };
 
+    void testComplexFile()
+    {
+        QUrl url;
+        url.setScheme("snapshot"_L1);
+        url.setPath(QDir::cleanPath("/file/"_L1 + m_testComplexMount + "/data.txt"_L1));
+        KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
+        connect(listJob, &KIO::ListJob::entries, this, &TestFileSnapshotsWorker::slotComplexFileEntries);
+        QVERIFY(listJob->exec());
+    }
+
 protected Q_SLOTS:
     void slotRootFileEntries(KIO::Job *, const KIO::UDSEntryList &entries)
     {
@@ -62,6 +78,7 @@ protected Q_SLOTS:
             qDebug() << entry;
             const auto localPath = entry.stringValue(KIO::UDSEntry::UDS_LOCAL_PATH);
             QVERIFY(!localPath.isEmpty());
+            QVERIFY(QFileInfo::exists(localPath));
             if (localPath == QDir::cleanPath(m_testMount + "/file.txt"_L1)) {
                 hasCurrent = true;
             }
@@ -126,6 +143,31 @@ protected Q_SLOTS:
         QVERIFY(hasAfterAdditions);
         QVERIFY(!hasAfterRemoval);
         QVERIFY(hasAfterRecreation);
+    }
+
+    void slotComplexFileEntries(KIO::Job *, const KIO::UDSEntryList &entries)
+    {
+        bool hasCurrent = false;
+        bool hasFirst = false;
+        bool hasSecond = false;
+        for (const KIO::UDSEntry &entry : std::as_const(entries)) {
+            qDebug() << entry;
+            const auto localPath = entry.stringValue(KIO::UDSEntry::UDS_LOCAL_PATH);
+            QVERIFY(!localPath.isEmpty());
+            QVERIFY(QFileInfo(localPath).isFile());
+            if (localPath == QDir::cleanPath(m_testComplexMount + "/data.txt"_L1)) {
+                hasCurrent = true;
+            }
+            if (localPath.contains("@first"_L1)) {
+                hasFirst = true;
+            }
+            if (localPath.contains("@second"_L1)) {
+                hasSecond = true;
+            }
+        }
+        QVERIFY(hasCurrent);
+        QVERIFY(!hasFirst);
+        QVERIFY(hasSecond);
     }
 };
 
