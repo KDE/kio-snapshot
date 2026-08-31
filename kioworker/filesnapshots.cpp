@@ -185,10 +185,14 @@ KIO::WorkerResult SnapshotProtocol::statForFile(const SnapshotUrl &url)
     }
 
     if (!url.actualPath().isEmpty()) {
+        QFileInfo file(url.actualPath());
+        if (!file.exists()) {
+            return KIO::WorkerResult::fail(KIO::ERR_DOES_NOT_EXIST);
+        }
         KIO::UDSEntry uds;
         uds.reserve(6);
         uds.fastInsert(KIO::UDSEntry::UDS_NAME, url.fileName());
-        if (QFileInfo(url.actualPath()).isDir()) {
+        if (file.isDir()) {
             uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, url.fileName());
         } else {
             uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME,
