@@ -12,3 +12,7 @@ add_test(NAME SnapshotWorkerTest COMMAND SnapshotWorkerTest -o snapshot-worker-r
 add_executable(FileSnapshotsWorkerTest test_filesnapshots_worker.cpp)
 target_link_libraries(FileSnapshotsWorkerTest PRIVATE Qt6::Core Qt6::Test KF6::KIOCore)
 add_test(NAME FileSnapshotsWorkerTest COMMAND FileSnapshotsWorkerTest -o filesnapshots-worker-report.xml,junitxml)
+
+add_executable(BtrfsSnapshotsCoreTest test_btrfssnapshots_core.cpp)
+target_link_libraries(BtrfsSnapshotsCoreTest PRIVATE Qt6::Core Qt6::Test btrfssnapshots_lib)
+add_test(NAME BtrfsSnapshotsCoreTest COMMAND BtrfsSnapshotsCoreTest -o btrfssnapshots-core-report.xml,junitxml)
