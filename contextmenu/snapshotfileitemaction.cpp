@@ -63,11 +63,11 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
     }
     QString fsRootPath = fsAccess->filePath();
     auto fsVolume = fsDevice.as<Solid::StorageVolume>();
-    if (fsVolume->fsType() != "btrfs"_L1) {
-        return actions;
-    }
     if (!fsVolume) {
         qCCritical(SNAPSHOT_FILEITEMACTION()) << "could not determine fs storage volume for" << localPath;
+        return actions;
+    }
+    if (fsVolume->fsType() != "btrfs"_L1) {
         return actions;
     }
     QString fsUuid = fsVolume->uuid();
