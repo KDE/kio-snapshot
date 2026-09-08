@@ -62,18 +62,18 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
         return actions;
     }
     QString fsRootPath = fsAccess->filePath();
+
     auto fsVolume = fsDevice.as<Solid::StorageVolume>();
     if (!fsVolume) {
         // don't log paths in encrypted mounts
         if (!fsAccess->isEncrypted()) {
             qCCritical(SNAPSHOT_FILEITEMACTION()) << "could not determine fs storage volume for" << localPath;
         }
+    }
+    if (fsVolume && fsVolume->fsType() != "btrfs"_L1) {
         return actions;
     }
-    if (fsVolume->fsType() != "btrfs"_L1) {
-        return actions;
-    }
-    QString fsUuid = fsVolume->uuid();
+    QString fsUuid = fsVolume ? fsVolume->uuid() : QString();
 
     const auto originalPathOpt = BtrfsSnapshots::getOriginalForFileSnapshot(itemTargetUrl.path(), fsRootPath);
     if (originalPathOpt.has_value()) {
@@ -92,7 +92,7 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
             QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "Browse snapshots…"), parentWidget);
             connect(action, &QAction::triggered, this, [this, subvolumeIdOpt, fsRootPath, fsUuid, item]() {
                 QUrl targetUrl;
-                if (subvolumeIdOpt.has_value()) {
+                if (subvolumeIdOpt.has_value() && !fsUuid.isNull()) {
                     targetUrl.setScheme("snapshot"_L1);
                     if (fsRootPath != "/"_L1) {
                         targetUrl.setHost(fsUuid);
