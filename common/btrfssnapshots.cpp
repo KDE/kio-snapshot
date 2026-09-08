@@ -25,6 +25,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QGlobalStatic>
 #include <QHash>
 #include <QString>
 #include <QUuid>
@@ -37,6 +38,9 @@
 using namespace Qt::StringLiterals;
 
 #define CSTR(s) (s.toLocal8Bit().constData())
+
+typedef QHash<QString, QList<QString>> QStringListHash;
+Q_GLOBAL_STATIC(QStringListHash, btrfsMountsTable)
 
 std::optional<QString> getDeviceForRoot(const QString &fsRoot)
 {
@@ -82,11 +86,16 @@ std::optional<QPair<QDir, struct btrfs_util_subvolume_info>> getSubvolumeRoot(co
 
 QList<QString> getBtrfsSubvolMounts(const QString &fsRoot)
 {
+    if (btrfsMountsTable->contains(fsRoot)) {
+        return btrfsMountsTable->value(fsRoot);
+    }
+
     QList<QString> subvolMounts;
     subvolMounts << fsRoot;
 
     auto deviceOpt = getDeviceForRoot(fsRoot);
     if (!deviceOpt.has_value()) {
+        btrfsMountsTable->insert(fsRoot, subvolMounts);
         return subvolMounts;
     }
 
@@ -142,6 +151,7 @@ QList<QString> getBtrfsSubvolMounts(const QString &fsRoot)
     std::sort(subvolMounts.begin(), subvolMounts.end(), [](const QString &a, const QString &b) {
         return a.length() < b.length();
     });
+    btrfsMountsTable->insert(fsRoot, subvolMounts);
     return subvolMounts;
 }
 
