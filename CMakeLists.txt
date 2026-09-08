@@ -59,6 +59,7 @@ target_include_directories(btrfssnapshots_lib PUBLIC common/)
 
 add_subdirectory(kioworker)
 add_subdirectory(contextmenu)
+add_subdirectory(overlayicon)
 
 install(FILES org.kde.kio_snapshot.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
 
