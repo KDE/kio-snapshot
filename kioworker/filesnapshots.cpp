@@ -166,9 +166,6 @@ KIO::WorkerResult SnapshotProtocol::mimetypeForFile(const SnapshotUrl &url)
 
 KIO::WorkerResult SnapshotProtocol::statForFile(const SnapshotUrl &url)
 {
-    qCDebug(KIO_SNAPSHOT) << "stat" << url;
-    qCDebug(KIO_SNAPSHOT) << url.fileName();
-
     if (url.fileName().startsWith("snapshot-"_L1) && !QFileInfo::exists(url.actualPath())) {
         const auto snapshot = snapshotForWorkerUrl(url);
         if (!snapshot.has_value()) {
