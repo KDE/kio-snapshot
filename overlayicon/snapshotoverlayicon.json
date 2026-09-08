@@ -1,0 +1,10 @@
+{
+    "KPlugin": {
+        "Description": "Overlay icon for snapshots",
+        "License": "GPL",
+        "Name": "Snapshots",
+        "ServiceTypes": [
+            "KOverlayIconPlugin"
+        ]
+    }
+}
