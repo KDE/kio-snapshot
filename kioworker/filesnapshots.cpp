@@ -15,9 +15,6 @@
 #include <KIO/UDSEntry>
 #include <KIO/WorkerBase>
 
-#include <Solid/Device>
-#include <Solid/StorageAccess>
-
 #include <KFormat>
 #include <KLocalizedString>
 
@@ -26,6 +23,7 @@
 #include <QDir>
 #include <QLocale>
 #include <QUrl>
+#include <QUuid>
 
 std::optional<KIO::UDSEntry> statForSnapshot(const BtrfsSnapshots::FileSnapshot &snapshot)
 {
@@ -77,14 +75,13 @@ std::optional<BtrfsSnapshots::FileSnapshot> snapshotForWorkerUrl(const SnapshotU
             current.subvolumeId = 0;
             return current;
         } else {
-            auto fsRoot = Solid::Device::storageAccessFromPath(localUrl.path()).as<Solid::StorageAccess>();
-            if (!fsRoot) {
-                qCCritical(KIO_SNAPSHOT) << "could not determine fs root path for" << localUrl;
+            const auto fsUuidOpt = BtrfsSnapshots::getFsUuid(localUrl.path());
+            if (!fsUuidOpt.has_value()) {
                 return std::nullopt;
             }
-            QString fsRootPath = fsRoot->filePath();
+            const QUuid fsUuid = fsUuidOpt.value();
 
-            const QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(localUrl.path(), fsRootPath);
+            const QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(localUrl.path(), fsUuid);
             for (const auto &snapshot : snapshots) {
                 if (snapshot.subvolumeId == subvolId) {
                     return snapshot;
@@ -99,14 +96,14 @@ std::optional<BtrfsSnapshots::FileSnapshot> snapshotForWorkerUrl(const SnapshotU
 KIO::WorkerResult SnapshotProtocol::listDirForFile(const SnapshotUrl &url)
 {
     QString localPath = url.actualPath();
-    auto fsRoot = Solid::Device::storageAccessFromPath(localPath).as<Solid::StorageAccess>();
-    if (!fsRoot) {
-        qCCritical(KIO_SNAPSHOT) << "could not determine fs root path for" << localPath;
+
+    const auto fsUuidOpt = BtrfsSnapshots::getFsUuid(localPath);
+    if (!fsUuidOpt.has_value()) {
         return KIO::WorkerResult::fail(KIO::ERR_DOES_NOT_EXIST);
     }
-    QString fsRootPath = fsRoot->filePath();
+    const QUuid fsUuid = fsUuidOpt.value();
 
-    QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(url.actualPath(), fsRootPath);
+    QList<BtrfsSnapshots::FileSnapshot> snapshots = BtrfsSnapshots::getSnapshotsForFile(url.actualPath(), fsUuid);
 
     std::sort(snapshots.begin(), snapshots.end(), [](const BtrfsSnapshots::FileSnapshot &a, const BtrfsSnapshots::FileSnapshot &b) {
         return a.snapshotted.toMSecsSinceEpoch() > b.snapshotted.toMSecsSinceEpoch();

@@ -13,10 +13,6 @@
 #include <KIO/JobUiDelegate>
 #include <KIO/OpenUrlJob>
 
-#include <Solid/Device>
-#include <Solid/StorageAccess>
-#include <Solid/StorageVolume>
-
 #include <KFileItem>
 #include <KLocalizedString>
 #include <KPluginFactory>
@@ -55,27 +51,22 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
     const QUrl itemUrl = item.url();
 
     QString localPath = itemTargetUrl.toLocalFile();
-    auto fsDevice = Solid::Device::storageAccessFromPath(localPath);
-    auto fsAccess = fsDevice.as<Solid::StorageAccess>();
-    if (!fsAccess) {
-        qCCritical(SNAPSHOT_FILEITEMACTION()) << "could not determine fs root path for" << localPath;
+
+    if (!BtrfsSnapshots::isOnBtrfs(localPath)) {
         return actions;
     }
-    QString fsRootPath = fsAccess->filePath();
 
-    auto fsVolume = fsDevice.as<Solid::StorageVolume>();
-    if (!fsVolume) {
-        // don't log paths in encrypted mounts
-        if (!fsAccess->isEncrypted()) {
-            qCCritical(SNAPSHOT_FILEITEMACTION()) << "could not determine fs storage volume for" << localPath;
-        }
-    }
-    if (fsVolume && fsVolume->fsType() != "btrfs"_L1) {
+    const auto fsRootPathOpt = BtrfsSnapshots::getFsRoot(localPath);
+    const auto fsUuidOpt = BtrfsSnapshots::getFsUuid(localPath);
+
+    if (!fsRootPathOpt.has_value() || !fsUuidOpt.has_value()) {
         return actions;
     }
-    QString fsUuid = fsVolume ? fsVolume->uuid() : QString();
 
-    const auto originalPathOpt = BtrfsSnapshots::getOriginalForFileSnapshot(itemTargetUrl.path(), fsRootPath);
+    const QString fsRootPath = fsRootPathOpt.value();
+    const QUuid fsUuid = fsUuidOpt.value();
+
+    const auto originalPathOpt = BtrfsSnapshots::getOriginalForFileSnapshot(itemTargetUrl.path(), fsUuid);
     if (originalPathOpt.has_value()) {
         const auto originalPath = originalPathOpt.value();
         QAction *action = new QAction(QIcon::fromTheme("document-revert"_L1), i18nc("@action:inmenu", "Restore…"), parentWidget);
@@ -87,15 +78,15 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
     }
 
     if (item.isDir()) {
-        if (BtrfsSnapshots::hasSnapshots(itemTargetUrl.toLocalFile(), fsRootPath)) {
-            auto subvolumeIdOpt = BtrfsSnapshots::getSubvolumeForPath(itemTargetUrl.toLocalFile(), fsRootPath);
+        if (BtrfsSnapshots::hasSnapshots(itemTargetUrl.toLocalFile(), fsUuid)) {
+            auto subvolumeIdOpt = BtrfsSnapshots::getSubvolumeForPath(itemTargetUrl.toLocalFile());
             QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "Browse snapshots…"), parentWidget);
             connect(action, &QAction::triggered, this, [this, subvolumeIdOpt, fsRootPath, fsUuid, item]() {
                 QUrl targetUrl;
                 if (subvolumeIdOpt.has_value() && !fsUuid.isNull()) {
                     targetUrl.setScheme("snapshot"_L1);
                     if (fsRootPath != "/"_L1) {
-                        targetUrl.setHost(fsUuid);
+                        targetUrl.setHost(fsUuid.toString(QUuid::WithoutBraces).toLower());
                     }
                     targetUrl.setPath("/subvolume/"_L1 + QString::number(subvolumeIdOpt.value()));
                 } else {
@@ -108,7 +99,7 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
             actions << action;
         }
     } else if (item.isLocalFile()) {
-        if (BtrfsSnapshots::hasSnapshots(itemTargetUrl.toLocalFile(), fsRootPath)) {
+        if (BtrfsSnapshots::hasSnapshots(itemTargetUrl.toLocalFile(), fsUuid)) {
             QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "View snapshots…"), parentWidget);
             connect(action, &QAction::triggered, this, [this, item]() {
                 QUrl targetUrl;

@@ -11,7 +11,7 @@ sudo rm butter || true
 
 truncate --size 128M butter  # 128M is the minimum size for Btrfs, apparently
 mkfs.btrfs butter
-sudo mount --mkdir --type=btrfs -o uhelper=udisks2 butter butter-tray  # we need udisks to see the mount, so Solid::storageAccessForPath can work
+sudo mount --mkdir --type=btrfs -o uhelper=udisks2 butter butter-tray
 sudo chown -R $USER:$USER butter-tray
 
 sleep 0.5 && sudo btrfs subvolume snapshot butter-tray butter-tray/@initial
@@ -57,7 +57,7 @@ sudo rm butter2 || true
 
 truncate --size 128M butter2  # 128M is the minimum size for Btrfs, apparently
 mkfs.btrfs butter2
-sudo mount --mkdir --type=btrfs -o uhelper=udisks2 butter2 butter2-tray  # we need udisks to see the mount, so Solid::storageAccessForPath can work
+sudo mount --mkdir --type=btrfs -o uhelper=udisks2 butter2 butter2-tray
 sudo chown -R $USER:$USER butter2-tray
 
 sudo btrfs subvolume create butter2-tray/sub2
@@ -71,7 +71,7 @@ echo "fin" > butter2-tray/sub2/data.txt  # current
 sudo btrfs filesystem sync butter2-tray
 
 sudo umount butter2-tray
-sudo mount --mkdir --type=btrfs -o uhelper=udisks2,subvol=sub2 butter2 butter2-sub2-tray  # we need udisks to see the mount, so Solid::storageAccessForPath can work
-sudo mount --mkdir --type=btrfs -o uhelper=udisks2,subvol=sub2snaps butter2 butter2-sub2snaps-tray  # we need udisks to see the mount, so Solid::storageAccessForPath can work
+sudo mount --mkdir --type=btrfs -o uhelper=udisks2,subvol=sub2 butter2 butter2-sub2-tray
+sudo mount --mkdir --type=btrfs -o uhelper=udisks2,subvol=sub2snaps butter2 butter2-sub2snaps-tray
 
 sleep 3  # avoid flakiness with not being able to retrieve mount UUID via DBus
