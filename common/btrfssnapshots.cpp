@@ -57,7 +57,7 @@ std::optional<QUuid> BtrfsSnapshots::getFsUuid(const QString &fsPath)
         return std::nullopt;
     }
 
-    int fd = open(CSTR(fsPath), O_RDONLY | O_NOATIME | O_CLOEXEC);
+    int fd = open(CSTR(fsPath), O_RDONLY | O_CLOEXEC);
     if (fd < 0) {
         return std::nullopt;
     }
