@@ -238,7 +238,7 @@ std::optional<qulonglong> BtrfsSnapshots::getSubvolumeForPath(const QString &pat
     btrfs_err = btrfs_util_subvolume_get_info(CSTR(path), 0, &info);
     if (btrfs_err == 0) {
         return info.id;
-    } else if (isOnBtrfs(path)) {
+    } else if (isOnBtrfs(path) && getFsRoot(path) == path) {
         return 5;
     } else {
         return std::nullopt;
