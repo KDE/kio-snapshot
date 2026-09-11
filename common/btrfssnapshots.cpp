@@ -29,6 +29,8 @@
     #define btrfs_util_subvolume_iter_destroy btrfs_util_destroy_subvolume_iterator
 #endif
 
+#define BTRFS_FS_TREE_OBJECTID 5ULL
+
 #include <libmount/libmount.h>
 
 #include <QDir>
@@ -239,7 +241,7 @@ std::optional<qulonglong> BtrfsSnapshots::getSubvolumeForPath(const QString &pat
     if (btrfs_err == 0) {
         return info.id;
     } else if (isOnBtrfs(path) && getFsRoot(path) == path) {
-        return 5;
+        return BTRFS_FS_TREE_OBJECTID;
     } else {
         return std::nullopt;
     }
@@ -256,7 +258,7 @@ std::optional<QString> BtrfsSnapshots::getPathForSubvolume(qulonglong subvolume,
         btrfs_err = btrfs_util_subvolume_get_info(CSTR(mountPoint), 0, &info);
         if (btrfs_err == 0 && info.id == subvolume) {
             return mountPoint;
-        } else if (btrfs_err != 0 && subvolume == 5) {
+        } else if (btrfs_err != 0 && subvolume == BTRFS_FS_TREE_OBJECTID) {
             return mountPoint;
         }
 
