@@ -95,7 +95,7 @@ std::optional<QString> BtrfsSnapshots::getFsRoot(const QString &fsPath)
     }
 
     struct statx stx_target;
-    if (statx(current_fd, "", AT_EMPTY_PATH, STATX_MNT_ID | STATX_MNT_ID_UNIQUE, &stx_target) < 0) {
+    if (statx(current_fd, "", AT_EMPTY_PATH, STATX_MNT_ID_UNIQUE, &stx_target) < 0) {
         close(current_fd);
         return std::nullopt;
     }
@@ -115,7 +115,7 @@ std::optional<QString> BtrfsSnapshots::getFsRoot(const QString &fsPath)
         }
 
         struct statx stx_parent;
-        if (statx(parent_fd, "", AT_EMPTY_PATH, STATX_MNT_ID | STATX_MNT_ID_UNIQUE, &stx_parent) < 0) {
+        if (statx(parent_fd, "", AT_EMPTY_PATH, STATX_MNT_ID_UNIQUE, &stx_parent) < 0) {
             close(current_fd);
             close(parent_fd);
             return std::nullopt;
