@@ -36,6 +36,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QHash>
+#include <QScopeGuard>
 #include <QString>
 #include <QUuid>
 
@@ -63,16 +64,16 @@ std::optional<QUuid> BtrfsSnapshots::getFsUuid(const QString &fsPath)
     if (fd < 0) {
         return std::nullopt;
     }
+    auto fdGuard = qScopeGuard([fd] {
+        close(fd);
+    });
 
     struct btrfs_ioctl_fs_info_args args;
     memset(&args, 0, sizeof(args));
 
     if (ioctl(fd, BTRFS_IOC_FS_INFO, &args) < 0) {
-        close(fd);
         return std::nullopt;
     }
-
-    close(fd);
 
     return QUuid::fromBytes(args.fsid);
 }
@@ -95,10 +96,14 @@ std::optional<QString> BtrfsSnapshots::getFsRoot(const QString &fsPath)
     if (current_fd < 0) {
         return std::nullopt;
     }
+    auto currentFdGuard = qScopeGuard([&current_fd] {
+        if (current_fd > 0) {
+            close(current_fd);
+        }
+    });
 
     struct statx stx_target;
     if (statx(current_fd, "", AT_EMPTY_PATH, STATX_MNT_ID_UNIQUE, &stx_target) < 0) {
-        close(current_fd);
         return std::nullopt;
     }
 
@@ -106,32 +111,30 @@ std::optional<QString> BtrfsSnapshots::getFsRoot(const QString &fsPath)
 
     while (true) {
         if (rootPath == "/"_L1) {
-            close(current_fd);
             return rootPath;
         }
 
         int parent_fd = openat(current_fd, "..", O_PATH | O_DIRECTORY | O_CLOEXEC);
         if (parent_fd < 0) {
-            close(current_fd);
             return std::nullopt;
         }
+        auto parentFdGuard = qScopeGuard([parent_fd] {
+            close(parent_fd);
+        });
 
         struct statx stx_parent;
         if (statx(parent_fd, "", AT_EMPTY_PATH, STATX_MNT_ID_UNIQUE, &stx_parent) < 0) {
-            close(current_fd);
-            close(parent_fd);
             return std::nullopt;
         }
 
         if (stx_parent.stx_mnt_id != target_mnt_id) {
             // current fd must be the mount point
-            close(current_fd);
-            close(parent_fd);
             return rootPath;
         }
 
         close(current_fd);
         current_fd = parent_fd;
+        parentFdGuard.dismiss();
 
         // cd up...
         auto lastSlash = rootPath.lastIndexOf('/'_L1);
