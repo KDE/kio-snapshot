@@ -186,31 +186,26 @@ KIO::WorkerResult SnapshotProtocol::statForFile(const SnapshotUrl &url)
         if (!file.exists()) {
             return KIO::WorkerResult::fail(KIO::ERR_DOES_NOT_EXIST);
         }
+        const QString displayName = file.isDir()
+            ? url.fileName()
+            : i18nc("@title denoting that this directory shows a listing of snapshots for the path %1", "Snapshots for %1", url.fileName());
+
         KIO::UDSEntry uds;
-        uds.reserve(6);
-        uds.fastInsert(KIO::UDSEntry::UDS_NAME, url.fileName());
-        if (file.isDir()) {
-            uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, url.fileName());
-        } else {
-            uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME,
-                           i18nc("@title denoting that this directory shows a listing of snapshots for the path %1", "Snapshots for %1", url.fileName()));
-        }
-        uds.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s);
-        uds.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR);
-        uds.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s);
-        uds.fastInsert(KIO::UDSEntry::UDS_ACCESS, S_IRUSR | S_IXUSR);
+        uds.insert({{KIO::UDSEntry::UDS_NAME, url.fileName()},
+                    {KIO::UDSEntry::UDS_DISPLAY_NAME, displayName},
+                    {KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s},
+                    {KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s}});
+        uds.insert({{KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR}, {KIO::UDSEntry::UDS_ACCESS, S_IRUSR | S_IXUSR}});
         statEntry(uds);
         return KIO::WorkerResult::pass();
     }
 
     KIO::UDSEntry uds;
-    uds.reserve(6);
-    uds.fastInsert(KIO::UDSEntry::UDS_NAME, "file_snapshots"_L1);
-    uds.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, i18nc("@title denoting that this directory shows a listing of snapshots", "File Snapshots"));
-    uds.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s);
-    uds.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR);
-    uds.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s);
-    uds.fastInsert(KIO::UDSEntry::UDS_ACCESS, S_IRUSR | S_IXUSR);
+    uds.insert({{KIO::UDSEntry::UDS_NAME, u"file_snapshots"_s},
+                {KIO::UDSEntry::UDS_DISPLAY_NAME, i18nc("@title denoting that this directory shows a listing of snapshots", "File Snapshots")},
+                {KIO::UDSEntry::UDS_ICON_NAME, u"view-history"_s},
+                {KIO::UDSEntry::UDS_MIME_TYPE, u"inode/directory"_s}});
+    uds.insert({{KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR}, {KIO::UDSEntry::UDS_ACCESS, S_IRUSR | S_IXUSR}});
     statEntry(uds);
 
     return KIO::WorkerResult::pass();
