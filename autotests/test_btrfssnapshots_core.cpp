@@ -56,6 +56,8 @@ private Q_SLOTS:
         for (const auto &snapshot : snapshots) {
             QCOMPARE(getOriginalForFileSnapshot(snapshot.path, m_testUuid), rootFile);
         }
+        QCOMPARE(getFsRoot(rootFile), m_testMount);
+        QCOMPARE(getFsUuid(rootFile), m_testUuid);
     };
 
     void testSubvolumeFile()
@@ -66,6 +68,8 @@ private Q_SLOTS:
         for (const auto &snapshot : snapshots) {
             QCOMPARE(getOriginalForFileSnapshot(snapshot.path, m_testUuid), subvolumeFile);
         }
+        QCOMPARE(getFsRoot(subvolumeFile), m_testMount);
+        QCOMPARE(getFsUuid(subvolumeFile), m_testUuid);
     };
 
     void testComplexFile()
@@ -76,6 +80,8 @@ private Q_SLOTS:
         for (const auto &snapshot : snapshots) {
             QCOMPARE(getOriginalForFileSnapshot(snapshot.path, m_testComplexUuid), complexFile);
         }
+        QCOMPARE(getFsRoot(complexFile), m_testComplexMount);
+        QCOMPARE(getFsUuid(complexFile), m_testComplexUuid);
     }
 };
 
