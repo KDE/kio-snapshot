@@ -52,12 +52,12 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
 
     QString localPath = itemTargetUrl.toLocalFile();
 
-    if (!BtrfsSnapshots::isOnBtrfs(localPath)) {
+    const auto fsUuidOpt = BtrfsSnapshots::getFsUuid(localPath);
+    if (!fsUuidOpt.has_value()) {
         return actions;
     }
 
     const auto fsRootPathOpt = BtrfsSnapshots::getFsRoot(localPath);
-    const auto fsUuidOpt = BtrfsSnapshots::getFsUuid(localPath);
 
     if (!fsRootPathOpt.has_value() || !fsUuidOpt.has_value()) {
         return actions;
