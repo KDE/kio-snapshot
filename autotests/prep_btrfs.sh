@@ -5,73 +5,82 @@
 
 set -eux
 
-sudo umount butter-tray || true
-sudo rmdir butter-tray || true
-sudo rm butter || true
+rm butter || true
 
 truncate --size 128M butter  # 128M is the minimum size for Btrfs, apparently
-mkfs.btrfs butter
-sudo mount --mkdir --type=btrfs -o uhelper=udisks2 butter butter-tray  # we need udisks to see the mount, so Solid::storageAccessForPath can work
-sudo chown -R $USER:$USER butter-tray
+mkdir __test  # something for mkfs to copy permissions from, so we can read-write to it later
+mkfs.btrfs --rootdir __test butter
+rmdir __test
 
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray butter-tray/@initial
-echo "hello" > butter-tray/file.txt
-sudo btrfs filesystem sync butter-tray
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray butter-tray/@after-creation
-sudo btrfs filesystem sync butter-tray
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray butter-tray/@duplicate
-echo "world" >> butter-tray/file.txt
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray butter-tray/@after-additions
-rm butter-tray/file.txt
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray butter-tray/@after-removal
-echo "again" > butter-tray/file.txt
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray butter-tray/@after-recreation
+echo $KIO_SNAPSHOT_BUILD_DIR
+if ! [ -n "$KIO_SNAPSHOT_BUILD_DIR" ]; then
+    echo "KIO_SNAPSHOT_BUILD_DIR not set (required for udisks_mounter)"
+    exit 1
+fi
 
-echo "fin" > butter-tray/file.txt  # current
+PATH="$KIO_SNAPSHOT_BUILD_DIR/bin/:$PATH"
 
-sudo btrfs subvolume create butter-tray/sub
-sudo chown -R $USER:$USER butter-tray/sub
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-initial
-echo "hello from subvolume" > butter-tray/sub/vol.txt
-sudo btrfs filesystem sync butter-tray
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-after-creation
-sudo btrfs filesystem sync butter-tray
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-duplicate
-echo "world" >> butter-tray/sub/vol.txt
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-after-additions
-rm butter-tray/sub/vol.txt
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-after-removal
-echo "again" > butter-tray/sub/vol.txt
-sleep 0.5 && sudo btrfs subvolume snapshot butter-tray/sub butter-tray/@sub-after-recreation
+export QT_LOGGING_RULES="*.critical=true;default.debug=true"
 
-echo "fin" > butter-tray/sub/vol.txt  # current
+BUTTER_TRAY=$(udisks_mounter --mount-image butter)
 
-sudo btrfs filesystem sync butter-tray
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY" "$BUTTER_TRAY/@initial"
+echo "hello" > "$BUTTER_TRAY/file.txt"
+btrfs filesystem sync "$BUTTER_TRAY"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY" "$BUTTER_TRAY/@after-creation"
+btrfs filesystem sync "$BUTTER_TRAY"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY" "$BUTTER_TRAY/@duplicate"
+echo "world" >> "$BUTTER_TRAY/file.txt"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY" "$BUTTER_TRAY/@after-additions"
+rm "$BUTTER_TRAY/file.txt"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY" "$BUTTER_TRAY/@after-removal"
+echo "again" > "$BUTTER_TRAY/file.txt"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY" "$BUTTER_TRAY/@after-recreation"
+
+echo "fin" > "$BUTTER_TRAY/file.txt"  # current
+
+btrfs subvolume create "$BUTTER_TRAY/sub"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY/sub" "$BUTTER_TRAY/@sub-initial"
+echo "hello from subvolume" > "$BUTTER_TRAY/sub/vol.txt"
+btrfs filesystem sync "$BUTTER_TRAY"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY/sub" "$BUTTER_TRAY/@sub-after-creation"
+btrfs filesystem sync "$BUTTER_TRAY"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY/sub" "$BUTTER_TRAY/@sub-duplicate"
+echo "world" >> "$BUTTER_TRAY/sub/vol.txt"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY/sub" "$BUTTER_TRAY/@sub-after-additions"
+rm "$BUTTER_TRAY/sub/vol.txt"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY/sub" "$BUTTER_TRAY/@sub-after-removal"
+echo "again" > "$BUTTER_TRAY/sub/vol.txt"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER_TRAY/sub" "$BUTTER_TRAY/@sub-after-recreation"
+
+echo "fin" > "$BUTTER_TRAY/sub/vol.txt"  # current
+
+btrfs filesystem sync "$BUTTER_TRAY"
+
+ln -sf "$BUTTER_TRAY" butter-tray
 
 
 # for complex layouts (snapshots and data in separate subvolumes, neither accessible from a single root)
 
-sudo umount butter2-tray || true
-sudo rmdir butter2-tray || true
-sudo rm butter2 || true
+rm butter2 || true
 
 truncate --size 128M butter2  # 128M is the minimum size for Btrfs, apparently
-mkfs.btrfs butter2
-sudo mount --mkdir --type=btrfs -o uhelper=udisks2 butter2 butter2-tray  # we need udisks to see the mount, so Solid::storageAccessForPath can work
-sudo chown -R $USER:$USER butter2-tray
+mkdir __test  # something for mkfs to copy permissions from, so we can read-write to it later
+mkfs.btrfs --rootdir __test butter2
+rmdir __test
 
-sudo btrfs subvolume create butter2-tray/sub2
-sudo btrfs subvolume create butter2-tray/sub2snaps
-sudo chown -R $USER:$USER butter2-tray/sub2
-sleep 0.5 && sudo btrfs subvolume snapshot butter2-tray/sub2 butter2-tray/sub2snaps/@first
-echo "hello from subvolume" > butter2-tray/sub2/data.txt
-sleep 0.5 && sudo btrfs subvolume snapshot butter2-tray/sub2 butter2-tray/sub2snaps/@second
-echo "fin" > butter2-tray/sub2/data.txt  # current
+BUTTER2_TRAY=$(udisks_mounter --mount-image butter2)
 
-sudo btrfs filesystem sync butter2-tray
+btrfs subvolume create "$BUTTER2_TRAY/sub2"
+btrfs subvolume create "$BUTTER2_TRAY/sub2snaps"
+chown -R $USER:$USER "$BUTTER2_TRAY/sub2"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER2_TRAY/sub2" "$BUTTER2_TRAY/sub2snaps/@first"
+echo "hello from subvolume" > "$BUTTER2_TRAY/sub2/data.txt"
+sleep 0.5 && btrfs subvolume snapshot "$BUTTER2_TRAY/sub2" "$BUTTER2_TRAY/sub2snaps/@second"
+echo "fin" > "$BUTTER2_TRAY/sub2/data.txt"  # current
 
-sudo umount butter2-tray
-sudo mount --mkdir --type=btrfs -o uhelper=udisks2,subvol=sub2 butter2 butter2-sub2-tray  # we need udisks to see the mount, so Solid::storageAccessForPath can work
-sudo mount --mkdir --type=btrfs -o uhelper=udisks2,subvol=sub2snaps butter2 butter2-sub2snaps-tray  # we need udisks to see the mount, so Solid::storageAccessForPath can work
+btrfs filesystem sync "$BUTTER2_TRAY"
+
+ln -sf "$BUTTER2_TRAY" butter2-tray
 
 sleep 3  # avoid flakiness with not being able to retrieve mount UUID via DBus
