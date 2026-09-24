@@ -6,9 +6,7 @@
 
 #include <KIO/ListJob>
 
-#include <Solid/Device>
-#include <Solid/StorageAccess>
-#include <Solid/StorageVolume>
+#include "../common/btrfssnapshots.h"
 
 #include <QDir>
 #include <QObject>
@@ -24,9 +22,9 @@ class TestSnapshotWorker : public QObject
 
 private:
     QString m_testMount;
-    QString m_fsUuid;
+    QUuid m_fsUuid;
     QString m_testComplexMount;
-    QString m_complexFsUuid;
+    QUuid m_complexFsUuid;
 
 private Q_SLOTS:
     void initTestCase()
@@ -35,46 +33,31 @@ private Q_SLOTS:
         if (m_testMount.isEmpty() || !QDir(m_testMount).exists()) {
             QFAIL("Could not access mountpoint for test Btrfs filesystem (check env var KIO_SNAPSHOT_TEST_MOUNTPOINT)");
         }
-        auto fsDevice = Solid::Device::storageAccessFromPath(m_testMount);
-        auto fsAccess = fsDevice.as<Solid::StorageAccess>();
-        if (!fsAccess) {
-            QFAIL("could not determine fs root path");
+        m_fsUuid = BtrfsSnapshots::getFsUuid(m_testMount).value_or(QUuid());
+        if (m_fsUuid.isNull()) {
+            QFAIL("Could not determine FS UUID for test Btrfs filesystem");
         }
-        qDebug() << fsAccess->filePath();
-        QString fsRootPath = fsAccess->filePath();
-        auto fsVolume = fsDevice.as<Solid::StorageVolume>();
-        if (!fsVolume) {
-            QFAIL("could not determine fs storage volume for");
-        }
-        qDebug() << fsVolume->uuid();
-        m_fsUuid = fsVolume->uuid();
-        QCOMPARE_NE(m_fsUuid, ""_L1);
 
         m_testComplexMount = QString::fromUtf8(qgetenv("KIO_SNAPSHOT_TEST_COMPLEX_MOUNTPOINT"));
         if (m_testComplexMount.isEmpty() || !QDir(m_testComplexMount).exists()) {
             QFAIL("Could not access mountpoint for test Btrfs filesystem (check env var KIO_SNAPSHOT_TEST_COMPLEX_MOUNTPOINT)");
         }
-        fsDevice = Solid::Device::storageAccessFromPath(m_testComplexMount);
-        fsAccess = fsDevice.as<Solid::StorageAccess>();
-        if (!fsAccess) {
-            QFAIL("could not determine fs root path");
+        m_complexFsUuid = BtrfsSnapshots::getFsUuid(m_testComplexMount).value_or(QUuid());
+        if (m_complexFsUuid.isNull()) {
+            QFAIL("Could not determine FS UUID for test complex Btrfs filesystem");
         }
-        qDebug() << fsAccess->filePath();
-        fsRootPath = fsAccess->filePath();
-        fsVolume = fsDevice.as<Solid::StorageVolume>();
-        if (!fsVolume) {
-            QFAIL("could not determine fs storage volume for");
+
+        m_testMount = QString::fromUtf8(qgetenv("KIO_SNAPSHOT_TEST_MOUNTPOINT"));
+        if (m_testMount.isEmpty() || !QDir(m_testMount).exists()) {
+            QFAIL("Could not access mountpoint for test Btrfs filesystem (check env var KIO_SNAPSHOT_TEST_MOUNTPOINT)");
         }
-        qDebug() << fsVolume->uuid();
-        m_complexFsUuid = fsVolume->uuid();
-        QCOMPARE_NE(m_complexFsUuid, ""_L1);
     };
 
     void testListAllSubvolumes()
     {
         QUrl url;
         url.setScheme("snapshot"_L1);
-        url.setHost(m_fsUuid);
+        url.setHost(m_fsUuid.toString(QUuid::WithoutBraces).toLower());
         url.setPath("/subvolume"_L1);
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotAllSubvolumesEntries);
@@ -85,7 +68,7 @@ private Q_SLOTS:
     {
         QUrl url;
         url.setScheme("snapshot"_L1);
-        url.setHost(m_fsUuid);
+        url.setHost(m_fsUuid.toString(QUuid::WithoutBraces).toLower());
         url.setPath("/subvolume"_L1);
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotGetSubvolumeId);
@@ -96,7 +79,7 @@ private Q_SLOTS:
     {
         QUrl url;
         url.setScheme("snapshot"_L1);
-        url.setHost(m_fsUuid);
+        url.setHost(m_fsUuid.toString(QUuid::WithoutBraces).toLower());
         url.setPath("/subvolume/5"_L1);
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotRootSnapshotEntries);
@@ -113,7 +96,7 @@ private Q_SLOTS:
     {
         QUrl url;
         url.setScheme("snapshot"_L1);
-        url.setHost(m_complexFsUuid);
+        url.setHost(m_complexFsUuid.toString(QUuid::WithoutBraces).toLower());
         url.setPath("/subvolume/256"_L1);
         KIO::ListJob *listJob = KIO::listDir(url, KIO::HideProgressInfo);
         connect(listJob, &KIO::ListJob::entries, this, &TestSnapshotWorker::slotComplexSnapshotEntries);
@@ -160,7 +143,7 @@ protected Q_SLOTS:
 
         QUrl subSnapshotsUrl;
         subSnapshotsUrl.setScheme("snapshot"_L1);
-        subSnapshotsUrl.setHost(m_fsUuid);
+        subSnapshotsUrl.setHost(m_fsUuid.toString(QUuid::WithoutBraces).toLower());
         subSnapshotsUrl.setPath("/subvolume/%1"_L1.arg(QString::number(subvolumeId)));
         qDebug() << subSnapshotsUrl;
         KIO::ListJob *subListJob = KIO::listDir(subSnapshotsUrl, KIO::HideProgressInfo);

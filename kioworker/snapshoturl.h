@@ -5,6 +5,7 @@
 */
 
 #include <QUrl>
+#include <QUuid>
 
 enum class SnapshotUrlKind {
     Subvolume,
@@ -16,7 +17,7 @@ class SnapshotUrl : public QUrl
 public:
     SnapshotUrl(const QUrl &url);
 
-    QString fsRoot() const;
+    QUuid fsUuid() const;
     std::optional<SnapshotUrlKind> kind() const;
     std::optional<qulonglong> subvolumeId() const;
     std::optional<qulonglong> snapshotId() const;

@@ -5,8 +5,18 @@
 */
 #include "btrfssnapshots.h"
 
+#include <fcntl.h>
+#include <linux/btrfs.h>
+#include <linux/magic.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/vfs.h>
+#include <unistd.h>
+
+#include <KMountPoint>
+#include <kio_version.h>
 
 #include <btrfsutil.h>
 
@@ -22,33 +32,127 @@
     #define btrfs_util_subvolume_iter_destroy btrfs_util_destroy_subvolume_iterator
 #endif
 
+#define BTRFS_FS_TREE_OBJECTID 5ULL
+
 #include <libmount/libmount.h>
 
 #include <QDir>
 #include <QFileInfo>
 #include <QHash>
+#include <QScopeGuard>
 #include <QString>
 #include <QUuid>
-
-#include <Solid/Block>
-#include <Solid/Device>
-#include <Solid/StorageAccess>
-#include <Solid/StorageVolume>
 
 using namespace Qt::StringLiterals;
 
 #define CSTR(s) (s.toLocal8Bit().constData())
 
-std::optional<QString> getDeviceForRoot(const QString &fsRoot)
+bool BtrfsSnapshots::isOnBtrfs(const QString &fsPath)
 {
-    auto fsDevice = Solid::Device::storageAccessFromPath(fsRoot);
+#if KIO_VERSION >= QT_VERSION_CHECK(6, 30, 0)
+    KMountPoint::Ptr mountPoint = KMountPoint::currentMountPointForPath(fsPath);
+    return mountPoint->mountType() == "btrfs"_L1;
+#else
+    struct statfs sfs;
+    if (statfs(CSTR(fsPath), &sfs) < 0) {
+        return false;
+    }
 
-    auto fsBlock = fsDevice.as<Solid::Block>();
-    if (!fsBlock) {
+    return (sfs.f_type == BTRFS_SUPER_MAGIC);
+#endif
+}
+
+std::optional<QUuid> BtrfsSnapshots::getFsUuid(const QString &fsPath)
+{
+    if (!isOnBtrfs(fsPath)) {
         return std::nullopt;
     }
 
-    return fsBlock->device();
+    int fd = open(CSTR(fsPath), O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
+        return std::nullopt;
+    }
+    auto fdGuard = qScopeGuard([fd] {
+        close(fd);
+    });
+
+    struct btrfs_ioctl_fs_info_args args;
+    memset(&args, 0, sizeof(args));
+
+    if (ioctl(fd, BTRFS_IOC_FS_INFO, &args) < 0) {
+        return std::nullopt;
+    }
+
+    return QUuid::fromBytes(args.fsid);
+}
+
+std::optional<QString> BtrfsSnapshots::getFsRoot(const QString &fsPath)
+{
+    QString dirPath = fsPath;
+    if (QFileInfo(dirPath).isFile()) {
+        dirPath = QFileInfo(dirPath).absolutePath();
+    }
+
+    char *resolved = realpath(CSTR(dirPath), NULL);
+    if (!resolved) {
+        return std::nullopt;
+    }
+
+    QString rootPath = QString::fromUtf8(resolved);
+    int current_fd = open(resolved, O_PATH | O_CLOEXEC);
+    free(resolved);
+    if (current_fd < 0) {
+        return std::nullopt;
+    }
+    auto currentFdGuard = qScopeGuard([&current_fd] {
+        if (current_fd > 0) {
+            close(current_fd);
+        }
+    });
+
+    struct statx stx_target;
+    if (statx(current_fd, "", AT_EMPTY_PATH, STATX_MNT_ID_UNIQUE, &stx_target) < 0) {
+        return std::nullopt;
+    }
+
+    auto target_mnt_id = stx_target.stx_mnt_id;
+
+    while (true) {
+        if (rootPath == "/"_L1) {
+            return rootPath;
+        }
+
+        int parent_fd = openat(current_fd, "..", O_PATH | O_DIRECTORY | O_CLOEXEC);
+        if (parent_fd < 0) {
+            return std::nullopt;
+        }
+        auto parentFdGuard = qScopeGuard([parent_fd] {
+            close(parent_fd);
+        });
+
+        struct statx stx_parent;
+        if (statx(parent_fd, "", AT_EMPTY_PATH, STATX_MNT_ID_UNIQUE, &stx_parent) < 0) {
+            return std::nullopt;
+        }
+
+        if (stx_parent.stx_mnt_id != target_mnt_id) {
+            // current fd must be the mount point
+            return rootPath;
+        }
+
+        close(current_fd);
+        current_fd = parent_fd;
+        parentFdGuard.dismiss();
+
+        // cd up...
+        auto lastSlash = rootPath.lastIndexOf('/'_L1);
+        if (lastSlash == 0) {
+            // rootPath = '/foo'
+            rootPath.chop(rootPath.size() - 1);
+        } else {
+            rootPath.chop(rootPath.size() - lastSlash);
+        }
+    }
 }
 
 std::optional<QPair<QDir, struct btrfs_util_subvolume_info>> getSubvolumeRoot(const QString &path)
@@ -81,17 +185,12 @@ std::optional<QPair<QDir, struct btrfs_util_subvolume_info>> getSubvolumeRoot(co
     return std::make_pair(subvolumeRoot, subvolume_root_info);
 }
 
-QList<QString> getBtrfsSubvolMounts(const QString &fsRoot)
+QList<QString> BtrfsSnapshots::getBtrfsSubvolMounts(QUuid fsUuid)
 {
     QList<QString> subvolMounts;
-    subvolMounts << fsRoot;
 
-    auto deviceOpt = getDeviceForRoot(fsRoot);
-    if (!deviceOpt.has_value()) {
-        return subvolMounts;
-    }
-
-    const QString &devicePath = deviceOpt.value();
+    const QString byUuidPath = "/dev/disk/by-uuid/"_L1 + fsUuid.toString(QUuid::WithoutBraces).toLower();
+    const QString devicePath = QFileInfo(byUuidPath).canonicalFilePath();
 
     struct libmnt_table *tb = mnt_new_table();
     struct libmnt_iter *itr = mnt_new_iter(MNT_ITER_FORWARD);
@@ -130,9 +229,7 @@ QList<QString> getBtrfsSubvolMounts(const QString &fsRoot)
             if (srcStr == devicePath) {
                 const char *target = mnt_fs_get_target(fs);
                 const QString targetStr = QString::fromUtf8(target);
-                if (targetStr != fsRoot) {
-                    subvolMounts << targetStr;
-                }
+                subvolMounts << targetStr;
             }
         }
     }
@@ -146,7 +243,7 @@ QList<QString> getBtrfsSubvolMounts(const QString &fsRoot)
     return subvolMounts;
 }
 
-std::optional<qulonglong> BtrfsSnapshots::getSubvolumeForPath(const QString &path, const QString &fsRoot)
+std::optional<qulonglong> BtrfsSnapshots::getSubvolumeForPath(const QString &path)
 {
     enum btrfs_util_error btrfs_err;
 
@@ -154,23 +251,25 @@ std::optional<qulonglong> BtrfsSnapshots::getSubvolumeForPath(const QString &pat
     btrfs_err = btrfs_util_subvolume_get_info(CSTR(path), 0, &info);
     if (btrfs_err == 0) {
         return info.id;
-    } else if (path == fsRoot) {
-        return 5;
+    } else if (isOnBtrfs(path) && getFsRoot(path) == path) {
+        return BTRFS_FS_TREE_OBJECTID;
     } else {
         return std::nullopt;
     }
 }
 
-std::optional<QString> BtrfsSnapshots::getPathForSubvolume(qulonglong subvolume, const QString &fsRoot)
+std::optional<QString> BtrfsSnapshots::getPathForSubvolume(qulonglong subvolume, QUuid fsUuid)
 {
     enum btrfs_util_error btrfs_err;
 
-    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
+    const auto subvolMounts = getBtrfsSubvolMounts(fsUuid);
 
     for (const auto &mountPoint : subvolMounts) {
         struct btrfs_util_subvolume_info info;
         btrfs_err = btrfs_util_subvolume_get_info(CSTR(mountPoint), 0, &info);
         if (btrfs_err == 0 && info.id == subvolume) {
+            return mountPoint;
+        } else if (btrfs_err != 0 && subvolume == BTRFS_FS_TREE_OBJECTID) {
             return mountPoint;
         }
 
@@ -194,14 +293,10 @@ std::optional<QString> BtrfsSnapshots::getPathForSubvolume(qulonglong subvolume,
         btrfs_util_subvolume_iter_destroy(iter);
     }
 
-    if (getSubvolumeForPath(fsRoot, fsRoot) == subvolume) {
-        return fsRoot;
-    }
-
     return std::nullopt;
 }
 
-bool BtrfsSnapshots::hasSnapshots(const QString &path, const QString &fsRoot)
+bool BtrfsSnapshots::hasSnapshots(const QString &path, QUuid fsUuid)
 {
     enum btrfs_util_error btrfs_err;
 
@@ -210,7 +305,7 @@ bool BtrfsSnapshots::hasSnapshots(const QString &path, const QString &fsRoot)
         return false;
     }
 
-    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
+    const auto subvolMounts = getBtrfsSubvolMounts(fsUuid);
     const auto [subvolumeRoot, subvolume_root_info] = subvolume_root_info_opt.value();
 
     for (const auto &mountPoint : subvolMounts) {
@@ -241,7 +336,7 @@ bool BtrfsSnapshots::hasSnapshots(const QString &path, const QString &fsRoot)
     return false;
 }
 
-QList<BtrfsSnapshots::FileSnapshot> BtrfsSnapshots::getSnapshotsForFile(const QString &path, const QString &fsRoot)
+QList<BtrfsSnapshots::FileSnapshot> BtrfsSnapshots::getSnapshotsForFile(const QString &path, QUuid fsUuid)
 {
     QList<FileSnapshot> fileSnapshots;
     enum btrfs_util_error btrfs_err;
@@ -255,7 +350,7 @@ QList<BtrfsSnapshots::FileSnapshot> BtrfsSnapshots::getSnapshotsForFile(const QS
 
     QString pathRel = subvolumeRoot.relativeFilePath(path);
 
-    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
+    const auto subvolMounts = getBtrfsSubvolMounts(fsUuid);
     QMap<qulonglong, QPair<QString, struct btrfs_util_subvolume_info>> foundSnapshots;
     for (const auto &mountPoint : subvolMounts) {
         struct btrfs_util_subvolume_info info;
@@ -298,7 +393,7 @@ QList<BtrfsSnapshots::FileSnapshot> BtrfsSnapshots::getSnapshotsForFile(const QS
     return fileSnapshots;
 }
 
-std::optional<QString> BtrfsSnapshots::getOriginalForFileSnapshot(const QString &fileSnapshotPath, const QString &fsRoot)
+std::optional<QString> BtrfsSnapshots::getOriginalForFileSnapshot(const QString &fileSnapshotPath, QUuid fsUuid)
 {
     enum btrfs_util_error btrfs_err;
 
@@ -316,7 +411,7 @@ std::optional<QString> BtrfsSnapshots::getOriginalForFileSnapshot(const QString 
 
     QString pathRel = subvolumeRoot.relativeFilePath(fileSnapshotPath);
 
-    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
+    const auto subvolMounts = getBtrfsSubvolMounts(fsUuid);
 
     for (const auto &mountPoint : subvolMounts) {
         struct btrfs_util_subvolume_info info;
@@ -348,7 +443,7 @@ std::optional<QString> BtrfsSnapshots::getOriginalForFileSnapshot(const QString 
     return std::nullopt;
 }
 
-QList<BtrfsSnapshots::SubvolumeSnapshot> BtrfsSnapshots::getSnapshotsForSubvolume(const QString &path, const QString &fsRoot)
+QList<BtrfsSnapshots::SubvolumeSnapshot> BtrfsSnapshots::getSnapshotsForSubvolume(const QString &path, QUuid fsUuid)
 {
     QList<SubvolumeSnapshot> subvolSnapshots;
 
@@ -360,7 +455,7 @@ QList<BtrfsSnapshots::SubvolumeSnapshot> BtrfsSnapshots::getSnapshotsForSubvolum
         return subvolSnapshots;
     }
 
-    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
+    const auto subvolMounts = getBtrfsSubvolMounts(fsUuid);
     QMap<qulonglong, QPair<QString, struct btrfs_util_subvolume_info>> foundSnapshots;
     for (const auto &mountPoint : subvolMounts) {
         struct btrfs_util_subvolume_info info;
@@ -398,13 +493,13 @@ QList<BtrfsSnapshots::SubvolumeSnapshot> BtrfsSnapshots::getSnapshotsForSubvolum
     return subvolSnapshots;
 }
 
-QMap<qulonglong, QString> BtrfsSnapshots::getNonSnapshotSubvolumes(const QString &fsRoot)
+QMap<qulonglong, QString> BtrfsSnapshots::getNonSnapshotSubvolumes(QUuid fsUuid)
 {
     QMap<qulonglong, QString> subvolumes;
 
     enum btrfs_util_error btrfs_err;
 
-    const auto subvolMounts = getBtrfsSubvolMounts(fsRoot);
+    const auto subvolMounts = getBtrfsSubvolMounts(fsUuid);
     for (const auto &mountPoint : subvolMounts) {
         struct btrfs_util_subvolume_info info;
         btrfs_err = btrfs_util_subvolume_get_info(CSTR(mountPoint), 0, &info);

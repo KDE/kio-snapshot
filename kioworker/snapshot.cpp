@@ -13,10 +13,6 @@
 #include <KIO/Global>
 #include <KIO/UDSEntry>
 
-#include <Solid/Device>
-#include <Solid/StorageAccess>
-#include <Solid/StorageVolume>
-
 #include <KLocalizedString>
 
 #include <QCoreApplication>
@@ -68,7 +64,7 @@ bool SnapshotProtocol::rewriteUrl(const QUrl &url, QUrl &newUrl)
     if (!snapshotId.has_value()) {
         return false;
     }
-    auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(snapshotId.value(), snapshotUrl.fsRoot());
+    auto snapshotPathOpt = BtrfsSnapshots::getPathForSubvolume(snapshotId.value(), snapshotUrl.fsUuid());
     if (!snapshotPathOpt.has_value()) {
         warning(i18nc("@info warning", "Could not open snapshot"));
         return false;

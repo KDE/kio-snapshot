@@ -33,13 +33,17 @@ public:
     QDateTime snapshotted;
 };
 
-std::optional<qulonglong> getSubvolumeForPath(const QString &path, const QString &fsRoot = "/"_L1);
-std::optional<QString> getPathForSubvolume(qulonglong subvolume, const QString &fsRoot = "/"_L1);
-QList<SubvolumeSnapshot> getSnapshotsForSubvolume(const QString &path, const QString &fsRoot = "/"_L1);
-bool hasSnapshots(const QString &path, const QString &fsRoot);
-QList<FileSnapshot> getSnapshotsForFile(const QString &path, const QString &fsRoot = "/"_L1);
-std::optional<QString> getOriginalForFileSnapshot(const QString &fileSnapshotPath, const QString &fsRoot = "/"_L1);
-QMap<qulonglong, QString> getNonSnapshotSubvolumes(const QString &fsRoot = "/"_L1);
+bool isOnBtrfs(const QString &fsPath);
+std::optional<QUuid> getFsUuid(const QString &fsPath);
+std::optional<QString> getFsRoot(const QString &fsPath);
+QList<QString> getBtrfsSubvolMounts(QUuid fsUuid);
+std::optional<qulonglong> getSubvolumeForPath(const QString &path);
+std::optional<QString> getPathForSubvolume(qulonglong subvolume, QUuid fsUuid);
+QList<SubvolumeSnapshot> getSnapshotsForSubvolume(const QString &path, QUuid fsUuid);
+bool hasSnapshots(const QString &path, QUuid fsUuid);
+QList<FileSnapshot> getSnapshotsForFile(const QString &path, QUuid fsUuid);
+std::optional<QString> getOriginalForFileSnapshot(const QString &fileSnapshotPath, QUuid fsUuid);
+QMap<qulonglong, QString> getNonSnapshotSubvolumes(QUuid fsUuid);
 }
 
 #endif

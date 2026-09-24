@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: LGPL-2.0-or-later
 
 add_executable(UrlParsingTest test_url_parsing.cpp ../kioworker/snapshoturl.cpp)
-target_link_libraries(UrlParsingTest PRIVATE Qt6::Core Qt6::Test KF6::KIOCore KF6::Solid)
+target_link_libraries(UrlParsingTest PRIVATE Qt6::Core Qt6::Test KF6::KIOCore btrfssnapshots_lib)
 add_test(NAME UrlParsingTest COMMAND UrlParsingTest -o url-parsing-report.xml,junitxml)
 
 add_executable(SnapshotWorkerTest test_snapshot_worker.cpp)
-target_link_libraries(SnapshotWorkerTest PRIVATE Qt6::Core Qt6::Test KF6::KIOCore KF6::Solid)
+target_link_libraries(SnapshotWorkerTest PRIVATE Qt6::Core Qt6::Test KF6::KIOCore btrfssnapshots_lib)
 add_test(NAME SnapshotWorkerTest COMMAND SnapshotWorkerTest -o snapshot-worker-report.xml,junitxml)
 
 add_executable(FileSnapshotsWorkerTest test_filesnapshots_worker.cpp)

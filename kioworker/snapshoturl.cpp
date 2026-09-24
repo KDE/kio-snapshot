@@ -6,8 +6,7 @@
 
 #include "snapshoturl.h"
 
-#include <Solid/Device>
-#include <Solid/StorageAccess>
+#include "../common/btrfssnapshots.h"
 
 #include <QString>
 #include <QUuid>
@@ -19,23 +18,12 @@ SnapshotUrl::SnapshotUrl(const QUrl &url)
 {
 }
 
-QString SnapshotUrl::fsRoot() const
+QUuid SnapshotUrl::fsUuid() const
 {
     if (host().isEmpty()) {
-        return "/"_L1;
+        return BtrfsSnapshots::getFsUuid("/"_L1).value_or(QUuid());
     }
-    QUuid uuid(host());
-    if (!uuid.isNull()) {
-        const auto deviceList = Solid::Device::listFromQuery("StorageVolume.uuid == '%1'"_L1.arg(uuid.toString(QUuid::StringFormat::WithoutBraces).toLower()));
-        if (!deviceList.isEmpty()) {
-            auto device = deviceList.first();
-            auto storageAccess = device.as<Solid::StorageAccess>();
-            if (storageAccess) {
-                return storageAccess->filePath();
-            }
-        }
-    }
-    return "/"_L1;
+    return QUuid(host());
 }
 
 std::optional<SnapshotUrlKind> SnapshotUrl::kind() const
