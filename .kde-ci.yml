@@ -12,7 +12,9 @@ Dependencies:
 Options:
   in-source-build: False
   test-before-installing: False
-  run-tests: False
+  run-tests: True
+  setup-x-environment: False
+  require-passing-tests-on: ['Linux/Qt6']
   run-cppcheck: True
   cppcheck-arguments: '--enable=warning,style,performance'
   require-cppcheck-clean: True

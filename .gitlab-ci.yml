@@ -28,21 +28,19 @@ build_clazy:
     - ninja -k 0
   artifacts: null
 
-build_tests_kdelinux:
-  stage: build
-  rules:
-    - !reference [.default_rules, rules]
-  tags:
-    - VM
-    - amd64
-  image: storage.kde.org/vm-images/kde-linux-builder
-  script: ./ci_build_test.sh
-  artifacts:
-    untracked: false
-    when: always
-    access: all
-    paths:
-      - build/**/*-report.xml
-    reports:
-      junit:
-        - build/**/*-report.xml
+suse_tumbleweed_qt611:
+  extends:
+    - .ci_linux_base
+    - .suse_tumbleweed_qt6stable
+  before_script:
+    - mkdir fstmp
+    - cd fstmp
+    - echo "$PATH"
+    - export PATH="/usr/sbin:$PATH"
+    - bash ../autotests/prep_btrfs.sh
+    - cd ..
+    - export KIO_SNAPSHOT_TEST_MOUNTPOINT="$PWD/fstmp/butter-tray"
+    - export KIO_SNAPSHOT_TEST_COMPLEX_MOUNTPOINT="$PWD/fstmp/butter2-sub2-tray"
+    - export QT_LOGGING_RULES="default.debug=true;*snapshot*=true"
+    - git clone https://invent.kde.org/sysadmin/ci-utilities.git --depth=1
+    - git clone https://invent.kde.org/sysadmin/repo-metadata.git ci-utilities/repo-metadata/ --depth=1
