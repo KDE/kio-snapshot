@@ -10,6 +10,7 @@ BUTTER_TRAY="$PWD/butter-tray"
 rm -r "$BUTTER_TRAY" || true
 
 truncate --size 128M butter  # 128M is the minimum size for Btrfs, apparently
+rmdir __test || true
 mkdir __test  # something for mkfs to copy permissions from, so we can read-write to it later
 mkfs.btrfs --rootdir __test butter
 rmdir __test
@@ -74,9 +75,11 @@ echo "hello from subvolume" > "$BUTTER2_TRAY/sub2/data.txt"
 sleep 0.5 && btrfs subvolume snapshot "$BUTTER2_TRAY/sub2" "$BUTTER2_TRAY/sub2snaps/@second"
 echo "fin" > "$BUTTER2_TRAY/sub2/data.txt"  # current
 
+btrfs filesystem sync "$BUTTER2_TRAY"
+
+sudo umount "$BUTTER2_TRAY"
+
 sudo mount --mkdir --type=btrfs butter2 --options subvol=/sub2 "$PWD/butter2-sub2-tray"
 sudo mount --mkdir --type=btrfs butter2 --options subvol=/sub2snaps "$PWD/butter2-sub2snaps-tray"
-
-btrfs filesystem sync "$BUTTER2_TRAY"
 
 sleep 3  # general anti-flakiness

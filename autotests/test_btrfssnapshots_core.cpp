@@ -78,9 +78,7 @@ private Q_SLOTS:
         const auto snapshots = getSnapshotsForFile(complexFile, m_testComplexUuid);
         QCOMPARE(snapshots.size(), 1);
         for (const auto &snapshot : snapshots) {
-            QVERIFY(getOriginalForFileSnapshot(snapshot.path, m_testComplexUuid).has_value());
-            // TODO re-enable after we get sudo umount in CI
-            // QCOMPARE(getOriginalForFileSnapshot(snapshot.path, m_testComplexUuid), complexFile);
+            QCOMPARE(getOriginalForFileSnapshot(snapshot.path, m_testComplexUuid), complexFile);
         }
         QCOMPARE(getFsRoot(complexFile), m_testComplexMount);
         QCOMPARE(getFsUuid(complexFile), m_testComplexUuid);
