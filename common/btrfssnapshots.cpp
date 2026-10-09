@@ -51,7 +51,7 @@ bool BtrfsSnapshots::isOnBtrfs(const QString &fsPath)
 {
 #if KIO_VERSION >= QT_VERSION_CHECK(6, 30, 0)
     KMountPoint::Ptr mountPoint = KMountPoint::currentMountPointForPath(fsPath);
-    return mountPoint->mountType() == "btrfs"_L1;
+    return mountPoint && mountPoint->mountType() == "btrfs"_L1;
 #else
     struct statfs sfs;
     if (statfs(CSTR(fsPath), &sfs) < 0) {
