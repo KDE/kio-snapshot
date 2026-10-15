@@ -4,43 +4,78 @@ SPDX-License-Identifier: CC0-1.0
 SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
 -->
 <component type="addon">
-    <id>org.kde.kio_snapshot</id>
-    <name>KIO Snapshot</name>
-    <metadata_license>CC0-1.0</metadata_license>
-    <project_license>LGPL-2.0-or-later</project_license>
-    <developer id="org.kde">
-        <name translate="no">KDE</name>
-    </developer>
-    <project_group>KDE</project_group>
-    <extends>org.kde.dolphin.desktop</extends>
-    <extends>org.kde.konqueror.desktop</extends>
-    <extends>org.kde.krusader.desktop</extends>
-    <extends>org.kde.gwenview.desktop</extends>
-    <summary>Filesystem snapshot integration for KDE applications</summary>
-    <description>
-        <p>KIO Snapshot enables KDE applications to view snapshot history of files and folders.</p>
-    </description>
-    <url type="homepage">https://apps.kde.org/en/kio_snapshot</url>
-    <url type="bugtracker">https://bugs.kde.org/enter_bug.cgi?format=guided&amp;product=kio-snapshot</url>
-    <screenshots>
-        <screenshot type="default">
-            <caption>Dolphin showing snapshots of a single file.</caption>
-            <image type="source" width="1130" height="788">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot-file.png</image>
-        </screenshot>
-        <screenshot>
-            <caption>Dolphin showing snapshots of a folder.</caption>
-            <image type="source" width="1130" height="788">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot-folder.png</image>
-        </screenshot>
-    </screenshots>
-    <releases>
-        <!--<release version="1.0.0" date="2026-??-??">
+  <id>org.kde.kio_snapshot</id>
+  <name>KIO Snapshot</name>
+  <name xml:lang="ca">KIO Snapshot</name>
+  <name xml:lang="ca-valencia">KIO Snapshot</name>
+  <name xml:lang="es">KIO Snapshot</name>
+  <name xml:lang="nl">KIO-momentopname</name>
+  <name xml:lang="pt-BR">KIO Snapshot</name>
+  <name xml:lang="tr">KIO Snapshot</name>
+  <name xml:lang="uk">KIO знімків</name>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LGPL-2.0-or-later</project_license>
+  <developer id="org.kde">
+    <name translate="no">KDE</name>
+  </developer>
+  <project_group>KDE</project_group>
+  <extends>org.kde.dolphin.desktop</extends>
+  <extends>org.kde.konqueror.desktop</extends>
+  <extends>org.kde.krusader.desktop</extends>
+  <extends>org.kde.gwenview.desktop</extends>
+  <summary>Filesystem snapshot integration for KDE applications</summary>
+  <summary xml:lang="ca">Integració de les instantànies de sistemes de fitxers amb les aplicacions de KDE</summary>
+  <summary xml:lang="ca-valencia">Integració de les instantànies de sistemes de fitxers amb les aplicacions de KDE</summary>
+  <summary xml:lang="es">Integración de instantáneas del sistema de archivos para aplicaciones de KDE</summary>
+  <summary xml:lang="nl">Integratie van bestandssysteemmomentopnamen voor KDE-toepassingen</summary>
+  <summary xml:lang="pt-BR">Integração de snapshots do sistema de arquivos para aplicativos KDE</summary>
+  <summary xml:lang="tr">KDE uygulamaları için dosya sistemi anlık görüntüsü tümleştirmesi</summary>
+  <summary xml:lang="uk">Інтеграція знімків файлової системи для програм KDE</summary>
+  <description>
+    <p>KIO Snapshot enables KDE applications to view snapshot history of files and folders.</p>
+    <p xml:lang="ca">El KIO Snapshot permet a les aplicacions KDE veure l'historial d'instantànies de fitxers i carpetes.</p>
+    <p xml:lang="ca-valencia">KIO Snapshot permet a les aplicacions KDE veure l'historial d'instantànies de fitxers i carpetes.</p>
+    <p xml:lang="es">KIO Snapshot permite a las aplicaciones de KDE ver el historial de instantáneas de archivos y carpetas.</p>
+    <p xml:lang="nl">KIO-snapshot stelt KDE-toepassingen in staat om de momentje-geschiedenis van bestanden en mappen te bekijken.</p>
+    <p xml:lang="pt-BR">O KIO Snapshot permite que aplicativos do KDE visualizem o histórico de snapshots de arquivos e pastas.</p>
+    <p xml:lang="tr">KIO Snapshot, KDE uygulamalarının dosya ve klasör anlık görüntülerini görüntüleyebilmelerine olanak tanır.</p>
+    <p xml:lang="uk">KIO знімків надає програмам KDE змогу переглядати журнал знімків файлів та тек.</p>
+  </description>
+  <url type="homepage">https://apps.kde.org/en/kio_snapshot</url>
+  <url type="bugtracker">https://bugs.kde.org/enter_bug.cgi?format=guided&amp;product=kio-snapshot</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Dolphin showing snapshots of a single file.</caption>
+      <caption xml:lang="ca">El Dolphin mostrant instantànies d'un fitxer individual.</caption>
+      <caption xml:lang="ca-valencia">Dolphin mostrant instantànies d'un fitxer individual.</caption>
+      <caption xml:lang="es">Dolphin mostrando instantáneas de un archivo individual.</caption>
+      <caption xml:lang="nl">Dolphin die momentopnamen van een enkel bestand toont.</caption>
+      <caption xml:lang="pt-BR">Dolphin exibindo snapshots de um único arquivo.</caption>
+      <caption xml:lang="tr">Bir dosyanın anlık görüntüsünü gösteren Dolphin</caption>
+      <caption xml:lang="uk">Dolphin, який показує знімки окремого файла.</caption>
+      <image type="source" width="1130" height="788">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot-file.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Dolphin showing snapshots of a folder.</caption>
+      <caption xml:lang="ca">El Dolphin mostrant instantànies d'una carpeta.</caption>
+      <caption xml:lang="ca-valencia">Dolphin mostrant instantànies d'una carpeta.</caption>
+      <caption xml:lang="es">Dolphin mostrando instantáneas de una carpeta.</caption>
+      <caption xml:lang="nl">Dolphin die momentopnamen van een map toont.</caption>
+      <caption xml:lang="pt-BR">Dolphin exibindo snapshots de uma pasta.</caption>
+      <caption xml:lang="tr">Bir klasörün anlık görüntüsünü gösteren Dolphin</caption>
+      <caption xml:lang="uk">Dolphin, який показує знімки теки.</caption>
+      <image type="source" width="1130" height="788">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot-folder.png</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <!--<release version="1.0.0" date="2026-??-??">
             <description>
                 <p>Initial release, tbd</p>
             </description>
         </release>-->
-    </releases>
-    <categories>
-        <category>System</category>
-    </categories>
-    <icon type="stock">view-history</icon>
+  </releases>
+  <categories>
+    <category>System</category>
+  </categories>
+  <icon type="stock">view-history</icon>
 </component>
