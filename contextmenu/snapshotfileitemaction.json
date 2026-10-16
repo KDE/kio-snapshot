@@ -4,8 +4,10 @@
         "Description[ca@valencia]": "Gestiona les instantànies de fitxers",
         "Description[ca]": "Gestiona les instantànies de fitxers",
         "Description[es]": "Gestión de instantáneas de archivos",
+        "Description[it]": "Gestisci le istantanee per i file",
         "Description[nl]": "Beheer momentopnamen voor bestanden",
         "Description[pt_BR]": "Gerenciar snapshots de arquivos",
+        "Description[sl]": "Upravlja s posnetki datotek",
         "Description[tr]": "Dosyaların anlık görüntülerini yönetin",
         "Description[uk]": "Керування знімками файлів",
         "Icon": "view-history",
@@ -18,8 +20,10 @@
         "Name[ca@valencia]": "Instantànies",
         "Name[ca]": "Instantànies",
         "Name[es]": "Instantáneas",
+        "Name[it]": "Istantanee",
         "Name[nl]": "Momentopnamen",
         "Name[pt_BR]": "Snapshots",
+        "Name[sl]": "Posnetki",
         "Name[tr]": "Anlık Görüntüler",
         "Name[uk]": "Знімки"
     }
