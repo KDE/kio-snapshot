@@ -10,6 +10,7 @@
         "Description[ka]": "მართეთ ფაილის სწრაფი ასლები",
         "Description[nl]": "Beheer momentopnamen voor bestanden",
         "Description[pt_BR]": "Gerenciar snapshots de arquivos",
+        "Description[ru]": "Управление снимками файлов",
         "Description[sl]": "Upravlja s posnetki datotek",
         "Description[tr]": "Dosyaların anlık görüntülerini yönetin",
         "Description[uk]": "Керування знімками файлів",
@@ -29,6 +30,7 @@
         "Name[ka]": "სწრაფი ასლები",
         "Name[nl]": "Momentopnamen",
         "Name[pt_BR]": "Snapshots",
+        "Name[ru]": "Снимки",
         "Name[sl]": "Posnetki",
         "Name[tr]": "Anlık Görüntüler",
         "Name[uk]": "Знімки"
