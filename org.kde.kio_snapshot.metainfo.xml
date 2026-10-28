@@ -19,6 +19,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <name xml:lang="sl">KIO Snapshot</name>
   <name xml:lang="tr">KIO Snapshot</name>
   <name xml:lang="uk">KIO знімків</name>
+  <name xml:lang="zh-CN">KIO 快照</name>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>LGPL-2.0-or-later</project_license>
   <developer id="org.kde">
@@ -43,6 +44,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <summary xml:lang="sl">Integracija posnetkov datotečnega sistema za KDE aplikacije</summary>
   <summary xml:lang="tr">KDE uygulamaları için dosya sistemi anlık görüntüsü tümleştirmesi</summary>
   <summary xml:lang="uk">Інтеграція знімків файлової системи для програм KDE</summary>
+  <summary xml:lang="zh-CN">KDE 应用程序的文件系统快照集成</summary>
   <description>
     <p>KIO Snapshot enables KDE applications to view snapshot history of files and folders.</p>
     <p xml:lang="ca">El KIO Snapshot permet a les aplicacions KDE veure l'historial d'instantànies de fitxers i carpetes.</p>
@@ -58,6 +60,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
     <p xml:lang="sl">KIO Snapshot omgoča KDE aplikacijam vpogled v zgodovino posnetkov datotek in map.</p>
     <p xml:lang="tr">KIO Snapshot, KDE uygulamalarının dosya ve klasör anlık görüntülerini görüntüleyebilmelerine olanak tanır.</p>
     <p xml:lang="uk">KIO знімків надає програмам KDE змогу переглядати журнал знімків файлів та тек.</p>
+    <p xml:lang="zh-CN">KIO 快照让KDE 应用程序可以查看文件和文件夹的快照历史记录。</p>
   </description>
   <url type="homepage">https://apps.kde.org/en/kio_snapshot</url>
   <url type="bugtracker">https://bugs.kde.org/enter_bug.cgi?format=guided&amp;product=kio-snapshot</url>
@@ -77,6 +80,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
       <caption xml:lang="sl">Dolphin prikazuje posnetke posamezne datoteke.</caption>
       <caption xml:lang="tr">Bir dosyanın anlık görüntüsünü gösteren Dolphin</caption>
       <caption xml:lang="uk">Dolphin, який показує знімки окремого файла.</caption>
+      <caption xml:lang="zh-CN">Dolphin 正在显示单个文件的快照。</caption>
       <image type="source" width="1130" height="788">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot-file.png</image>
     </screenshot>
     <screenshot>
@@ -94,6 +98,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
       <caption xml:lang="sl">Dolphin prikazuje posnetke mape.</caption>
       <caption xml:lang="tr">Bir klasörün anlık görüntüsünü gösteren Dolphin</caption>
       <caption xml:lang="uk">Dolphin, який показує знімки теки.</caption>
+      <caption xml:lang="zh-CN">Dolphin 正在显示文件夹的快照。</caption>
       <image type="source" width="1130" height="788">https://cdn.kde.org/screenshots/kio-snapshot/kio-snapshot-folder.png</image>
     </screenshot>
   </screenshots>
