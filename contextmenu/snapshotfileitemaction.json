@@ -14,6 +14,7 @@
         "Description[sl]": "Upravlja s posnetki datotek",
         "Description[tr]": "Dosyaların anlık görüntülerini yönetin",
         "Description[uk]": "Керування знімками файлів",
+        "Description[zh_CN]": "管理文件快照",
         "Icon": "view-history",
         "License": "GPL",
         "MimeTypes": [
@@ -33,6 +34,7 @@
         "Name[ru]": "Снимки",
         "Name[sl]": "Posnetki",
         "Name[tr]": "Anlık Görüntüler",
-        "Name[uk]": "Знімки"
+        "Name[uk]": "Знімки",
+        "Name[zh_CN]": "快照"
     }
 }
