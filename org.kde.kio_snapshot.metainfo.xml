@@ -17,6 +17,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <name xml:lang="nn">KIO-augneblinksbilete</name>
   <name xml:lang="pt-BR">KIO Snapshot</name>
   <name xml:lang="ru">KIO Snapshot</name>
+  <name xml:lang="sk">KIO Snapshot</name>
   <name xml:lang="sl">KIO Snapshot</name>
   <name xml:lang="tr">KIO Snapshot</name>
   <name xml:lang="uk">KIO знімків</name>
@@ -42,6 +43,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <summary xml:lang="nl">Integratie van bestandssysteemmomentopnamen voor KDE-toepassingen</summary>
   <summary xml:lang="pt-BR">Integração de snapshots do sistema de arquivos para aplicativos KDE</summary>
   <summary xml:lang="ru">Интеграция снимков файловой системы в приложения KDE</summary>
+  <summary xml:lang="sk">Integrácia snímok súborového systému pre aplikácie KDE</summary>
   <summary xml:lang="sl">Integracija posnetkov datotečnega sistema za KDE aplikacije</summary>
   <summary xml:lang="tr">KDE uygulamaları için dosya sistemi anlık görüntüsü tümleştirmesi</summary>
   <summary xml:lang="uk">Інтеграція знімків файлової системи для програм KDE</summary>
@@ -58,6 +60,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
     <p xml:lang="nl">KIO-snapshot stelt KDE-toepassingen in staat om de momentje-geschiedenis van bestanden en mappen te bekijken.</p>
     <p xml:lang="pt-BR">O KIO Snapshot permite que aplicativos do KDE visualizem o histórico de snapshots de arquivos e pastas.</p>
     <p xml:lang="ru">KIO Snapshot позволяет приложениям KDE просматривать историю снимков файлов и папок.</p>
+    <p xml:lang="sk">KIO Snapshot umožňuje aplikáciám KDE zobraziť históriu snímok súborov a priečinkov.</p>
     <p xml:lang="sl">KIO Snapshot omgoča KDE aplikacijam vpogled v zgodovino posnetkov datotek in map.</p>
     <p xml:lang="tr">KIO Snapshot, KDE uygulamalarının dosya ve klasör anlık görüntülerini görüntüleyebilmelerine olanak tanır.</p>
     <p xml:lang="uk">KIO знімків надає програмам KDE змогу переглядати журнал знімків файлів та тек.</p>
@@ -78,6 +81,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
       <caption xml:lang="nl">Dolphin die momentopnamen van een enkel bestand toont.</caption>
       <caption xml:lang="pt-BR">Dolphin exibindo snapshots de um único arquivo.</caption>
       <caption xml:lang="ru">Снимки отдельного файла в Dolphin.</caption>
+      <caption xml:lang="sk">Dolphin zobrazujúci snímky jedného súboru.</caption>
       <caption xml:lang="sl">Dolphin prikazuje posnetke posamezne datoteke.</caption>
       <caption xml:lang="tr">Bir dosyanın anlık görüntüsünü gösteren Dolphin</caption>
       <caption xml:lang="uk">Dolphin, який показує знімки окремого файла.</caption>
@@ -96,6 +100,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
       <caption xml:lang="nl">Dolphin die momentopnamen van een map toont.</caption>
       <caption xml:lang="pt-BR">Dolphin exibindo snapshots de uma pasta.</caption>
       <caption xml:lang="ru">Снимки папки в Dolphin.</caption>
+      <caption xml:lang="sk">Dolphin zobrazujúci snímky priečinka.</caption>
       <caption xml:lang="sl">Dolphin prikazuje posnetke mape.</caption>
       <caption xml:lang="tr">Bir klasörün anlık görüntüsünü gösteren Dolphin</caption>
       <caption xml:lang="uk">Dolphin, який показує знімки теки.</caption>
