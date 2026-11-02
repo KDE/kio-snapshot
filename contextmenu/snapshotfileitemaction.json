@@ -1,6 +1,7 @@
 {
     "KPlugin": {
         "Description": "Manage snapshots for files",
+        "Description[ar]": "إدارة لقطات الملفات",
         "Description[ca@valencia]": "Gestiona les instantànies de fitxers",
         "Description[ca]": "Gestiona les instantànies de fitxers",
         "Description[es]": "Gestión de instantáneas de archivos",
@@ -23,6 +24,7 @@
             "inode/directory"
         ],
         "Name": "Snapshots",
+        "Name[ar]": "اللقطات",
         "Name[ca@valencia]": "Instantànies",
         "Name[ca]": "Instantànies",
         "Name[es]": "Instantáneas",
