@@ -17,6 +17,7 @@
         "Description[tr]": "Dosyaların anlık görüntülerini yönetin",
         "Description[uk]": "Керування знімками файлів",
         "Description[zh_CN]": "管理文件快照",
+        "Description[zh_TW]": "管理檔案的快照",
         "Icon": "view-history",
         "License": "GPL",
         "MimeTypes": [
@@ -39,6 +40,7 @@
         "Name[sl]": "Posnetki",
         "Name[tr]": "Anlık Görüntüler",
         "Name[uk]": "Знімки",
-        "Name[zh_CN]": "快照"
+        "Name[zh_CN]": "快照",
+        "Name[zh_TW]": "快照"
     }
 }
