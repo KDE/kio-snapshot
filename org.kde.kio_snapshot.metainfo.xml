@@ -21,6 +21,10 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <name xml:lang="ru">KIO Snapshot</name>
   <name xml:lang="sk">KIO Snapshot</name>
   <name xml:lang="sl">KIO Snapshot</name>
+  <name xml:lang="sr">К‑У/И снимак</name>
+  <name xml:lang="sr-Latn">K‑U/I snimak</name>
+  <name xml:lang="sr-ijekavian">К‑У/И снимак</name>
+  <name xml:lang="sr-ijekavianlatin">K‑U/I snimak</name>
   <name xml:lang="tr">KIO Snapshot</name>
   <name xml:lang="uk">KIO знімків</name>
   <name xml:lang="zh-CN">KIO 快照</name>
@@ -50,6 +54,10 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <summary xml:lang="ru">Интеграция снимков файловой системы в приложения KDE</summary>
   <summary xml:lang="sk">Integrácia snímok súborového systému pre aplikácie KDE</summary>
   <summary xml:lang="sl">Integracija posnetkov datotečnega sistema za KDE aplikacije</summary>
+  <summary xml:lang="sr">Уклапање снимака фајл система у КДЕ програме</summary>
+  <summary xml:lang="sr-Latn">Uklapanje snimaka fajl sistema u KDE programe</summary>
+  <summary xml:lang="sr-ijekavian">Уклапање снимака фајл система у КДЕ програме</summary>
+  <summary xml:lang="sr-ijekavianlatin">Uklapanje snimaka fajl sistema u KDE programe</summary>
   <summary xml:lang="tr">KDE uygulamaları için dosya sistemi anlık görüntüsü tümleştirmesi</summary>
   <summary xml:lang="uk">Інтеграція знімків файлової системи для програм KDE</summary>
   <summary xml:lang="zh-CN">KDE 应用程序的文件系统快照集成</summary>
@@ -70,6 +78,10 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
     <p xml:lang="ru">KIO Snapshot позволяет приложениям KDE просматривать историю снимков файлов и папок.</p>
     <p xml:lang="sk">KIO Snapshot umožňuje aplikáciám KDE zobraziť históriu snímok súborov a priečinkov.</p>
     <p xml:lang="sl">KIO Snapshot omgoča KDE aplikacijam vpogled v zgodovino posnetkov datotek in map.</p>
+    <p xml:lang="sr">К‑У/И снимак омогућава КДЕ програмима да прикажу историјат снимака фајлова и фасцикли.</p>
+    <p xml:lang="sr-Latn">K‑U/I snimak omogućava KDE programima da prikažu istorijat snimaka fajlova i fascikli.</p>
+    <p xml:lang="sr-ijekavian">К‑У/И снимак омогућава КДЕ програмима да прикажу историјат снимака фајлова и фасцикли.</p>
+    <p xml:lang="sr-ijekavianlatin">K‑U/I snimak omogućava KDE programima da prikažu istorijat snimaka fajlova i fascikli.</p>
     <p xml:lang="tr">KIO Snapshot, KDE uygulamalarının dosya ve klasör anlık görüntülerini görüntüleyebilmelerine olanak tanır.</p>
     <p xml:lang="uk">KIO знімків надає програмам KDE змогу переглядати журнал знімків файлів та тек.</p>
     <p xml:lang="zh-CN">KIO 快照让KDE 应用程序可以查看文件和文件夹的快照历史记录。</p>
@@ -94,6 +106,10 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
       <caption xml:lang="ru">Снимки отдельного файла в Dolphin.</caption>
       <caption xml:lang="sk">Dolphin zobrazujúci snímky jedného súboru.</caption>
       <caption xml:lang="sl">Dolphin prikazuje posnetke posamezne datoteke.</caption>
+      <caption xml:lang="sr">Делфин приказује снимке једног фајла.</caption>
+      <caption xml:lang="sr-Latn">Dolphin prikazuje snimke jednog fajla.</caption>
+      <caption xml:lang="sr-ijekavian">Делфин приказује снимке једног фајла.</caption>
+      <caption xml:lang="sr-ijekavianlatin">Dolphin prikazuje snimke jednog fajla.</caption>
       <caption xml:lang="tr">Bir dosyanın anlık görüntüsünü gösteren Dolphin</caption>
       <caption xml:lang="uk">Dolphin, який показує знімки окремого файла.</caption>
       <caption xml:lang="zh-CN">Dolphin 正在显示单个文件的快照。</caption>
@@ -116,6 +132,10 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
       <caption xml:lang="ru">Снимки папки в Dolphin.</caption>
       <caption xml:lang="sk">Dolphin zobrazujúci snímky priečinka.</caption>
       <caption xml:lang="sl">Dolphin prikazuje posnetke mape.</caption>
+      <caption xml:lang="sr">Делфин приказује снимке фасцикле.</caption>
+      <caption xml:lang="sr-Latn">Dolphin prikazuje snimke fascikle.</caption>
+      <caption xml:lang="sr-ijekavian">Делфин приказује снимке фасцикле.</caption>
+      <caption xml:lang="sr-ijekavianlatin">Dolphin prikazuje snimke fascikle.</caption>
       <caption xml:lang="tr">Bir klasörün anlık görüntüsünü gösteren Dolphin</caption>
       <caption xml:lang="uk">Dolphin, який показує знімки теки.</caption>
       <caption xml:lang="zh-CN">Dolphin 正在显示文件夹的快照。</caption>
