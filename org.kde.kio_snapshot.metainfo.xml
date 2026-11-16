@@ -50,6 +50,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <summary xml:lang="it">Integrazione di istantanee del filesystem per le applicazioni KDE</summary>
   <summary xml:lang="ka">ფაილური სისტემის სწრაფი ასლების ინტეგრაცია KDE-ის აპლიკაციებისთვის</summary>
   <summary xml:lang="nl">Integratie van bestandssysteemmomentopnamen voor KDE-toepassingen</summary>
+  <summary xml:lang="nn">Integrering av filsystem-augneblinksbilete for KDE-program</summary>
   <summary xml:lang="pt-BR">Integração de snapshots do sistema de arquivos para aplicativos KDE</summary>
   <summary xml:lang="ru">Интеграция снимков файловой системы в приложения KDE</summary>
   <summary xml:lang="sk">Integrácia snímok súborového systému pre aplikácie KDE</summary>
