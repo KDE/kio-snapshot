@@ -15,6 +15,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <name xml:lang="he">תמונת מצב עם KIO</name>
   <name xml:lang="it">KIO Snapshot</name>
   <name xml:lang="ka">KIO Snapshot</name>
+  <name xml:lang="ko">KIO 스냅샷</name>
   <name xml:lang="nl">KIO-momentopname</name>
   <name xml:lang="nn">KIO-augneblinksbilete</name>
   <name xml:lang="pt-BR">KIO Snapshot</name>
@@ -49,6 +50,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
   <summary xml:lang="he">שילוב של תמונת מצב של מערכת הקבצים ליישומי KDE</summary>
   <summary xml:lang="it">Integrazione di istantanee del filesystem per le applicazioni KDE</summary>
   <summary xml:lang="ka">ფაილური სისტემის სწრაფი ასლების ინტეგრაცია KDE-ის აპლიკაციებისთვის</summary>
+  <summary xml:lang="ko">KDE 앱을 위한 파일 시스템 스냅샷 통합</summary>
   <summary xml:lang="nl">Integratie van bestandssysteemmomentopnamen voor KDE-toepassingen</summary>
   <summary xml:lang="nn">Integrering av filsystem-augneblinksbilete for KDE-program</summary>
   <summary xml:lang="pt-BR">Integração de snapshots do sistema de arquivos para aplicativos KDE</summary>
@@ -74,6 +76,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
     <p xml:lang="he">תמונות מצב עם KIO מאפשרות ליישומי KDE לצפות בהיסטוריית תמונת המצב של קבצים ותיקיות.</p>
     <p xml:lang="it">KIO Snapshot consente alle applicazioni KDE di visualizzare la cronologia delle istantanee di file e cartelle.</p>
     <p xml:lang="ka">KIO Snapshot საშუალებას აძლევს KDE-ის აპლიკაციების, ნახოს ფაილებისა და საქაღალდეების სწრაფი ასლის ისტორია.</p>
+    <p xml:lang="ko">KIO 스냅샷을 사용하면 KDE 앱에서 파일과 폴더의 과거 기록을 볼 수 있습니다.</p>
     <p xml:lang="nl">KIO-snapshot stelt KDE-toepassingen in staat om de momentje-geschiedenis van bestanden en mappen te bekijken.</p>
     <p xml:lang="pt-BR">O KIO Snapshot permite que aplicativos do KDE visualizem o histórico de snapshots de arquivos e pastas.</p>
     <p xml:lang="ru">KIO Snapshot позволяет приложениям KDE просматривать историю снимков файлов и папок.</p>
@@ -102,6 +105,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
       <caption xml:lang="he">Dolphin מציג תמונות מצב של קובץ בודד.</caption>
       <caption xml:lang="it">Dolphin che mostra le istantanee di un singolo file.</caption>
       <caption xml:lang="ka">Dolphin აჩვენებს ერთი ფაილის სწრაფ ასლებს.</caption>
+      <caption xml:lang="ko">Dolphin에서 개별 파일의 스냅샷을 표시합니다.</caption>
       <caption xml:lang="nl">Dolphin die momentopnamen van een enkel bestand toont.</caption>
       <caption xml:lang="pt-BR">Dolphin exibindo snapshots de um único arquivo.</caption>
       <caption xml:lang="ru">Снимки отдельного файла в Dolphin.</caption>
@@ -128,6 +132,7 @@ SPDX-FileCopyrightText: 2026 Bharadwaj Raju <bharadwaj.raju@machinesoul.in>
       <caption xml:lang="he">Dolphin מציג תמונות מצב של תיקייה.</caption>
       <caption xml:lang="it">Dolphin che mostra le anteprime di una cartella.</caption>
       <caption xml:lang="ka">Dolphin აჩვენებს საქაღალდის სწრაფ ასლებს.</caption>
+      <caption xml:lang="ko">Dolphin에서 폴더의 스냅샷을 표시합니다.</caption>
       <caption xml:lang="nl">Dolphin die momentopnamen van een map toont.</caption>
       <caption xml:lang="pt-BR">Dolphin exibindo snapshots de uma pasta.</caption>
       <caption xml:lang="ru">Снимки папки в Dolphin.</caption>
