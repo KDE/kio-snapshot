@@ -28,7 +28,7 @@ build_clazy:
     - ninja -k 0
   artifacts: null
 
-suse_tumbleweed_qt611:
+suse_tumbleweed_qt612:
   extends:
     - .ci_linux_base
     - .suse_tumbleweed_qt6stable
