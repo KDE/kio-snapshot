@@ -77,30 +77,11 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
         actions << action;
     }
 
-    if (item.isDir()) {
+    if (item.isLocalFile() || item.isDir()) {
         if (BtrfsSnapshots::hasSnapshots(itemTargetUrl.toLocalFile(), fsUuid)) {
-            auto subvolumeIdOpt = BtrfsSnapshots::getSubvolumeForPath(itemTargetUrl.toLocalFile());
-            QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "Browse snapshots…"), parentWidget);
-            connect(action, &QAction::triggered, this, [this, subvolumeIdOpt, fsRootPath, fsUuid, item]() {
-                QUrl targetUrl;
-                if (subvolumeIdOpt.has_value() && !fsUuid.isNull()) {
-                    targetUrl.setScheme("snapshot"_L1);
-                    if (fsRootPath != "/"_L1) {
-                        targetUrl.setHost(fsUuid.toString(QUuid::WithoutBraces).toLower());
-                    }
-                    targetUrl.setPath("/subvolume/"_L1 + QString::number(subvolumeIdOpt.value()));
-                } else {
-                    targetUrl.setScheme("snapshot"_L1);
-                    targetUrl.setPath(QDir::cleanPath("/file/"_L1 + item.localPath()));
-                }
-                KIO::OpenUrlJob *job = new KIO::OpenUrlJob(targetUrl, "inode/directory"_L1, this);
-                job->start();
-            });
-            actions << action;
-        }
-    } else if (item.isLocalFile()) {
-        if (BtrfsSnapshots::hasSnapshots(itemTargetUrl.toLocalFile(), fsUuid)) {
-            QAction *action = new QAction(QIcon::fromTheme("view-history"_L1), i18nc("@action:inmenu", "View snapshots…"), parentWidget);
+            QAction *action = new QAction(QIcon::fromTheme("view-history"_L1),
+                                          item.isDir() ? i18nc("@action:inmenu", "Browse snapshots…") : i18nc("@action:inmenu", "View snapshots…"),
+                                          parentWidget);
             connect(action, &QAction::triggered, this, [this, item]() {
                 QUrl targetUrl;
                 targetUrl.setScheme("snapshot"_L1);
