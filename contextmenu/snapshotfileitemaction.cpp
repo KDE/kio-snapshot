@@ -67,7 +67,7 @@ QList<QAction *> SnapshotFileItemAction::actions(const KFileItemListProperties &
     const QUuid fsUuid = fsUuidOpt.value();
 
     const auto originalPathOpt = BtrfsSnapshots::getOriginalForFileSnapshot(itemTargetUrl.path(), fsUuid);
-    if (originalPathOpt.has_value()) {
+    if (originalPathOpt.has_value() && !item.isDir()) {
         const auto originalPath = originalPathOpt.value();
         QAction *action = new QAction(QIcon::fromTheme("document-revert"_L1), i18nc("@action:inmenu", "Restore…"), parentWidget);
         connect(action, &QAction::triggered, this, [originalPath, itemTargetUrl]() {
